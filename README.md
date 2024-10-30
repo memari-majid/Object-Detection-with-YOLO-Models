@@ -2,16 +2,55 @@
 
 ## Project Overview
 
-This project demonstrates advanced object detection using multiple YOLO model versions (YOLOv8 to YOLOv11) with multi-GPU support. It serves as an educational template for implementing and comparing different YOLO architectures while leveraging parallel processing capabilities. The project showcases best practices in deep learning, including:
+This project demonstrates advanced object detection using multiple YOLO model versions (YOLOv8 to YOLOv11) with multi-GPU support. It serves as an educational template for implementing and comparing different YOLO architectures while leveraging parallel processing capabilities.
 
-- Multi-GPU training optimization
-- Early stopping mechanisms
-- Experiment tracking
-- Hyperparameter tuning
-- Data augmentation strategies
-- Model performance comparison
+### Research Context and Significance
 
-While the example use case focuses on defect detection in wind turbine blades using thermal imaging, the framework can be adapted for any object detection task across various domains such as autonomous driving, medical imaging, and surveillance.
+The project focuses on developing non-destructive fault detection methods for wind turbine blades (WTBs) using thermal images captured by Unmanned Aerial Vehicles (UAVs). Wind energy is a critical renewable source, but turbine blades are susceptible to damage that can hinder performance. While thermal imaging is effective for identifying subsurface defects, existing methods are limited due to generic datasets and lack of high-fidelity environmental conditions in testing.
+
+### Project Goals and Methodology
+
+This research addresses these limitations through:
+- Creation of a custom, high-resolution thermal dataset specifically for WTBs
+- Implementation of state-of-the-art machine learning and image processing techniques
+- Advanced object detection model comparison using the YOLO family
+- Integration of UAV-mounted cameras (DJI Matrice 300 RTK and DJI Mavic 3T)
+- Comprehensive environmental simulation and testing
+
+### Technical Analysis
+
+The methodology incorporates:
+- **Computational Analysis**: 
+  - Computational Fluid Dynamics (CFD)
+  - Finite Element Analysis (FEA) on WTBs
+  - Stress distribution studies
+  - Deformation analysis under varying wind speeds
+- **Practical Applications**:
+  - Material fatigue assessment
+  - Structural integrity evaluation
+  - Early-stage fault detection
+  - Maintenance optimization
+
+### Expected Impact
+
+The project aims to:
+- Improve wind turbine reliability
+- Optimize maintenance procedures
+- Extend blade lifespan
+- Reduce operational costs
+- Enhance wind energy infrastructure sustainability
+
+## Table of Contents
+
+1. [Key Features](#key-features)
+2. [Getting Started](#getting-started)
+3. [Technical Implementation](#technical-implementation)
+4. [Model Training and Evaluation](#model-training-and-evaluation)
+5. [Performance Optimization](#performance-optimization)
+6. [Example Use Case](#example-use-case-wind-turbine-blade-inspection)
+7. [Contributing](#contributing)
+8. [Documentation and Resources](#documentation-and-resources)
+9. [Project Information](#project-information)
 
 ## Key Features
 
@@ -22,112 +61,95 @@ While the example use case focuses on defect detection in wind turbine blades us
   - Efficient memory management to maximize GPU utilization.
 - **Advanced Training Features**:
   - Smart early stopping with multiple criteria to prevent overfitting.
-  - Version-specific hyperparameter optimization tailored to each YOLO variant.
-  - Comprehensive logging and monitoring for detailed training insights.
-  - Rich console output for real-time tracking of training progress.
+  - Version-specific hyperparameter optimization.
+  - Comprehensive logging and monitoring.
 - **Experiment Management**:
-  - Weights & Biases integration for robust experiment tracking.
-  - Automated performance tracking to monitor model improvements.
-  - Model versioning and artifact management to maintain organized records.
+  - Weights & Biases integration for experiment tracking.
+  - Automated performance tracking.
+  - Model versioning and artifact management.
 
-## Example Use Case: Wind Turbine Blade Inspection
+## Getting Started
 
-This implementation demonstrates practical application through wind turbine blade inspection:
+### Prerequisites
 
-1. **Data Collection**: 
-   - UAV-captured thermal and RGB images.
-   - Utilizes multiple drone platforms (DJI Matrice 300 RTK, DJI Mavic 3T).
-   - Collects data under various environmental conditions to ensure diverse dataset representation.
+- Python 3.8+
+- CUDA-capable GPU(s) with 16GB+ memory
+- NVIDIA Drivers and CUDA Toolkit
+- Anaconda or Miniconda
 
-2. **Pre-processing**: 
-   - Image normalization and augmentation to enhance dataset quality.
-   - Thermal image calibration to ensure accurate temperature representation.
-   - Dataset optimization tailored for defect detection in wind turbine blades.
+### Installation
 
-3. **Model Training**: 
-   - Multi-GPU training with different YOLO versions to leverage computational power.
-   - Specialized augmentation techniques for thermal imagery to improve model robustness.
-   - Defect-specific optimization to enhance detection accuracy of subsurface faults.
-
-4. **Evaluation**: 
-   - Performance comparison across different YOLO models to identify the most effective architecture.
-   - Defect detection accuracy analysis to measure model precision and recall.
-   - Assessment of environmental condition impacts on model performance.
-
-5. **Deployment**: 
-   - Model export and inference optimization for real-time applications.
-   - Integration with UAV systems for on-the-fly fault detection.
-   - Considerations for deploying models in edge devices to facilitate remote inspections.
-
-## Project Structure
-
+```bash
+conda env create -f ultralytics.yml
+conda activate ultralytics
 ```
-.
-├── run.py              # Main training pipeline
-├── models/
-│   ├── yolov8.py       # YOLOv8 implementation
-│   ├── yolov9.py       # YOLOv9 implementation
-│   ├── yolov10.py      # YOLOv10 implementation
-│   └── yolov11.py      # YOLOv11 implementation
-├── utils/
-│   ├── augmentation.py # Data augmentation utilities
-│   ├── early_stop.py   # Early stopping implementation
-│   └── gpu_utils.py    # GPU management utilities
-├── data/
-│   ├── train/          # Training data
-│   ├── val/            # Validation data
-│   ├── test/           # Test data
-│   └── config.yml      # Dataset configuration
-├── environment.yml     # Conda environment setup
-├── requirements.txt    # Pip dependencies
-└── README.md           # Project documentation
+
+### Basic Usage
+
+1. **Prepare Dataset**
+```yaml
+# config.yml
+train: path/to/train
+val: path/to/val
+test: path/to/test
+nc: 5  # number of classes
+names: ['class1', 'class2', 'class3', 'class4', 'class5']
+```
+
+2. **Run Training**
+```bash
+python run.py --config config.yml --models v8,v9,v10,v11
 ```
 
 ## Technical Implementation
 
+### Project Structure
+```
+.
+├── run.py              # Main training pipeline
+├── models/            
+├── utils/             
+├── data/              
+├── environment.yml    
+├── requirements.txt   
+└── README.md         
+```
+
 ### YOLO Models Overview
 
-The YOLO (You Only Look Once) family of models are state-of-the-art real-time object detection systems known for their speed and accuracy. This project leverages multiple versions of YOLO to compare their performance and suitability for specific tasks.
-
 #### YOLOv8
-
 - **Description**: The latest stable version from Ultralytics.
 - **Features**:
-  - Enhanced backbone and neck architecture.
-  - Improved anchor-free detection mechanism.
-  - Faster inference times with comparable accuracy.
-- **Use Case**: Ideal for general object detection tasks requiring high speed.
+  - Enhanced backbone and neck architecture
+  - Improved anchor-free detection mechanism
+  - Faster inference times with comparable accuracy
+- **Use Case**: Ideal for general object detection tasks requiring high speed
 
 #### YOLOv9
-
 - **Description**: An efficient architecture with optimized feature extraction.
 - **Features**:
-  - Enhanced computational efficiency.
-  - Better performance on small and densely packed objects.
-  - Reduced model size without sacrificing accuracy.
-- **Use Case**: Suitable for scenarios requiring high speed and accuracy on small object detection.
+  - Enhanced computational efficiency
+  - Better performance on small and densely packed objects
+  - Reduced model size without sacrificing accuracy
+- **Use Case**: Suitable for scenarios requiring high speed and accuracy on small object detection
 
 #### YOLOv10
-
 - **Description**: An advanced version with improved accuracy and robustness.
 - **Features**:
-  - Superior handling of complex scenes with multiple objects.
-  - Enhanced feature pyramid network for better multi-scale detection.
-  - Improved loss functions for more precise localization.
-- **Use Case**: Ideal for detailed and complex defect localization tasks.
+  - Superior handling of complex scenes with multiple objects
+  - Enhanced feature pyramid network for better multi-scale detection
+  - Improved loss functions for more precise localization
+- **Use Case**: Ideal for detailed and complex defect localization tasks
 
 #### YOLOv11
-
 - **Description**: The latest experimental version incorporating cutting-edge features.
 - **Features**:
-  - Advanced augmentation techniques.
-  - Improved loss functions for better training dynamics.
-  - Experimental modules for future YOLO advancements.
-- **Use Case**: Experimental setups that require the latest features and optimizations in object detection.
+  - Advanced augmentation techniques
+  - Improved loss functions for better training dynamics
+  - Experimental modules for future YOLO advancements
+- **Use Case**: Experimental setups that require the latest features and optimizations in object detection
 
 ### Multi-GPU Setup
-
-Utilizing multiple GPUs significantly accelerates the training process and allows handling larger models and datasets. The setup ensures efficient distribution of workloads across available GPUs.
 
 ```python
 def setup_gpu_environment():
@@ -143,9 +165,18 @@ train_args = {
 }
 ```
 
-### Early Stopping Implementation
+### Evaluation Metrics
 
-Early stopping is crucial to prevent overfitting and to ensure that training halts when the model ceases to improve.
+The project uses comprehensive metrics for model evaluation:
+
+- **mAP50-95**: Mean Average Precision across IoU thresholds
+- **Precision**: Accuracy of positive predictions
+- **Recall**: Ability to find all relevant instances
+- **F1-Score**: Harmonic mean of precision and recall
+- **Box Loss**: Loss value for bounding box predictions
+- **Classification Loss**: Loss value for class predictions
+
+### Early Stopping Implementation
 
 ```python
 class EarlyStoppingCallback:
@@ -162,258 +193,314 @@ class EarlyStoppingCallback:
         self.map_threshold = map_threshold
         self.loss_threshold = loss_threshold
         self.smoothing_window = smoothing_window
-        
-        self.val_losses = deque(maxlen=smoothing_window)
-        self.map_scores = deque(maxlen=smoothing_window)
-        self.best_map = 0
-        self.best_epoch = 0
-        self.stagnant_epochs = 0
-        self.best_weights = None
-
-    def check_stop_criteria(self, epoch, metrics, model_weights=None):
-        current_map = metrics.get('mAP50-95', 0)
-        current_loss = metrics.get('train/box_loss', float('inf'))
-        
-        self.map_scores.append(current_map)
-        self.val_losses.append(current_loss)
-        
-        if current_map > self.best_map:
-            self.best_map = current_map
-            self.best_epoch = epoch
-            self.stagnant_epochs = 0
-            self.best_weights = model_weights
-        else:
-            self.stagnant_epochs += 1
-        
-        if epoch < self.min_epochs:
-            return False, "Minimum epochs not reached"
-            
-        if epoch >= self.max_epochs:
-            return True, "Maximum epochs reached"
-            
-        if current_map >= self.map_threshold:
-            return True, f"mAP threshold {self.map_threshold} reached"
-            
-        if len(self.val_losses) == self.smoothing_window:
-            loss_change = abs(np.mean(list(self.val_losses)[-self.smoothing_window:]) - 
-                            np.mean(list(self.val_losses)[:-1]))
-            if loss_change < self.loss_threshold:
-                return True, f"Loss plateaued (change: {loss_change:.4f})"
-                
-        if self.stagnant_epochs >= self.patience:
-            return True, f"No improvement for {self.patience} epochs"
-            
-        return False, "Training continuing"
 ```
 
-### Version-Specific Augmentation
+## Example Use Case: Wind Turbine Blade Inspection
 
-Different YOLO versions may benefit from tailored data augmentation strategies to enhance model performance.
+### Data Collection
+- **UAV Equipment**:
+  - DJI Matrice 300 RTK with H20T camera
+  - DJI Mavic 3T with thermal imaging capabilities
+  - Custom-mounted FLIR thermal cameras
+- **Imaging Protocols**:
+  - Multiple angles (0°, 45°, 90°) for comprehensive coverage
+  - Flight patterns optimized for blade inspection
+  - Both daytime and nighttime thermal imaging
+- **Environmental Monitoring**:
+  - Weather conditions (temperature, humidity, wind speed)
+  - Time of day tracking for thermal variations
+  - Seasonal data collection for diverse conditions
 
+### Pre-processing
+- **Image Normalization**:
+  - Thermal calibration using reference temperatures
+  - Histogram equalization for enhanced contrast
+  - Resolution standardization across different cameras
+- **Data Augmentation**:
+  - Temperature variation simulation
+  - Defect intensity augmentation
+  - Environmental condition simulation
+- **Quality Control**:
+  - Automated blur detection and removal
+  - Thermal noise reduction
+  - Registration of thermal and RGB image pairs
+
+### Model Training
+- **Multi-GPU Strategy**:
+  - Distributed training across available GPUs
+  - Batch size optimization per GPU
+  - Gradient synchronization strategy
+- **Thermal-Specific Features**:
+  - Custom loss functions for thermal gradients
+  - Temperature-aware detection thresholds
+  - Thermal pattern recognition optimization
+- **Defect Categories**:
+  - Delamination detection
+  - Crack identification
+  - Moisture ingress mapping
+  - Internal structure anomalies
+
+### Deployment
+- **Model Optimization**:
+  - TensorRT conversion for faster inference
+  - Model quantization for edge devices
+  - Batch processing optimization
+- **UAV Integration**:
+  - Real-time inference on drone systems
+  - Automated flight path adjustment
+  - Dynamic focus on detected anomalies
+- **Monitoring System**:
+  - Web-based dashboard for results visualization
+  - Automated report generation
+  - Historical trend analysis
+- **Edge Computing**:
+  - On-device processing capabilities
+  - Low-latency detection requirements
+  - Power consumption optimization
+
+### Performance Metrics
+- **Detection Accuracy**:
+  - mAP scores for different defect types
+  - False positive/negative analysis
+  - Detection confidence thresholds
+- **Processing Speed**:
+  - Inference time per image
+  - Real-time processing capabilities
+  - GPU vs. CPU performance comparison
+- **Resource Utilization**:
+  - Memory usage optimization
+  - Battery life considerations
+  - Storage requirements for different deployment scenarios
+
+## Model Evaluation on Unlabeled Data
+
+### Real-Time Performance Assessment
+
+#### Confidence Score Analysis
+- **Threshold Optimization**:
+  - Dynamic confidence threshold adjustment based on lighting conditions
+  - Time-of-day specific threshold calibration
+  - Environmental condition-based threshold adaptation
+
+- **Statistical Monitoring**:
+  ```python
+  def analyze_confidence_distribution(predictions, window_size=1000):
+      confidence_scores = [pred.conf for pred in predictions]
+      mean_conf = np.mean(confidence_scores)
+      std_conf = np.std(confidence_scores)
+      return {
+          'mean_confidence': mean_conf,
+          'std_confidence': std_conf,
+          'confidence_histogram': np.histogram(confidence_scores, bins=10)
+      }
+  ```
+
+#### Domain Shift Detection
+- **Feature Distribution Monitoring**:
+  - Track changes in feature space distributions
+  - Alert on significant deviations from training distribution
+  - Adaptive calibration for new environmental conditions
+
+- **Implementation Example**:
+  ```python
+  def monitor_domain_shift(current_features, baseline_features):
+      # Calculate distribution divergence
+      kl_div = compute_kl_divergence(current_features, baseline_features)
+      
+      # Alert if shift detected
+      if kl_div > SHIFT_THRESHOLD:
+          trigger_recalibration()
+  ```
+
+### Deployment Validation Strategy
+
+#### Cross-Validation with Expert Review
+1. **Initial Deployment Phase**:
+   - Parallel human expert validation
+   - Confusion matrix building for unlabeled data
+   - Refinement of detection thresholds
+
+2. **Continuous Monitoring**:
+   ```python
+   def track_detection_stability(detections, time_window=3600):  # 1 hour
+       return {
+           'detection_count': len(detections),
+           'mean_confidence': np.mean([d.conf for d in detections]),
+           'detection_variance': np.var([d.bbox_area for d in detections]),
+           'temporal_consistency': assess_temporal_consistency(detections)
+       }
+   ```
+
+#### Performance Metrics for Unlabeled Data
+- **Stability Metrics**:
+  - Detection consistency across frames
+  - Confidence score stability
+  - Temporal coherence of detections
+
+- **Implementation**:
+  ```python
+  class UnlabeledPerformanceTracker:
+      def __init__(self):
+          self.detection_history = []
+          self.confidence_threshold = 0.5
+          
+      def update_metrics(self, new_detections):
+          # Track detection stability
+          stability_score = self.compute_stability(new_detections)
+          
+          # Update threshold if needed
+          self.adaptive_threshold_update(stability_score)
+          
+          # Log performance metrics
+          self.log_metrics({
+              'stability_score': stability_score,
+              'detection_count': len(new_detections),
+              'threshold': self.confidence_threshold
+          })
+  ```
+
+### Automated Quality Control
+
+#### Real-Time Validation Checks
+1. **Physical Constraints**:
+   - Size consistency verification
+   - Location plausibility checks
+   - Temporal consistency validation
+
+2. **Implementation Example**:
+   ```python
+   def validate_detection(detection, physical_constraints):
+       # Check if detection meets physical constraints
+       size_valid = validate_size(detection, physical_constraints['size_range'])
+       location_valid = validate_location(detection, physical_constraints['valid_zones'])
+       
+       return {
+           'is_valid': size_valid and location_valid,
+           'confidence': detection.conf,
+           'validation_details': {
+               'size_check': size_valid,
+               'location_check': location_valid
+           }
+       }
+   ```
+
+#### Automated Calibration System
+- **Dynamic Threshold Adjustment**:
+  ```python
+  class AdaptiveThresholdSystem:
+      def __init__(self, initial_threshold=0.5):
+          self.threshold = initial_threshold
+          self.performance_history = []
+          
+      def update_threshold(self, recent_performance):
+          # Adjust threshold based on performance metrics
+          if self.needs_adjustment(recent_performance):
+              new_threshold = self.calculate_optimal_threshold(
+                  self.performance_history[-100:])
+              self.threshold = new_threshold
+              
+      def needs_adjustment(self, performance):
+          # Decision logic for threshold adjustment
+          return (performance['false_positive_rate'] > 0.1 or 
+                 performance['detection_stability'] < 0.8)
+  ```
+
+### Integration with Existing Systems
+
+#### Data Pipeline Integration
 ```python
-augmentation_config = {
-    'v8': {
-        'mosaic': 1.0,
-        'mixup': 0.15,
-        'copy_paste': 0.3,
-        'perspective': 0.5
-    },
-    'v9': {
-        'mosaic': 1.0,
-        'mixup': 0.20,
-        'copy_paste': 0.4,
-        'perspective': 0.6
-    },
-    'v10': {
-        'mosaic': 1.0,
-        'mixup': 0.25,
-        'copy_paste': 0.5,
-        'perspective': 0.7
-    },
-    'v11': {
-        'mosaic': 1.0,
-        'mixup': 0.30,
-        'copy_paste': 0.6,
-        'perspective': 0.8
-    }
-}
+class DefectDetectionPipeline:
+    def __init__(self, model, performance_tracker, validator):
+        self.model = model
+        self.performance_tracker = performance_tracker
+        self.validator = validator
+        
+    def process_frame(self, frame):
+        # Run detection
+        detections = self.model(frame)
+        
+        # Validate detections
+        validated_detections = [
+            det for det in detections 
+            if self.validator.validate_detection(det)['is_valid']
+        ]
+        
+        # Update performance metrics
+        self.performance_tracker.update_metrics(validated_detections)
+        
+        return validated_detections
 ```
 
-## Getting Started
+#### Reporting and Monitoring
+- **Real-Time Dashboard**:
+  - Detection confidence trends
+  - False positive estimation
+  - System health metrics
+  - Performance degradation alerts
 
-### Prerequisites
-
-- **Python**: 3.8+
-- **CUDA-capable GPU(s)**: Recommended with 16GB+ GPU memory.
-- **NVIDIA Drivers and CUDA Toolkit**: Ensure compatibility with PyTorch and your GPU.
-- **Anaconda or Miniconda**: For environment management.
-
-### Installation
-
-#### Option 1: Using Conda (Recommended)
-
-1. **Create Conda Environment from YAML**
-
-    ```bash
-    conda env create -f ultralytics.yml
-    conda activate ultralytics
-    ```
-
-2. **Verify Installation**
-
-    ```bash
-    python -c "import torch; print(f'PyTorch {torch.__version__}')"
-    python -c "import ultralytics; print(f'Ultralytics {ultralytics.__version__}')"
-    ```
-
-    The `ultralytics.yml` file contains:
-
-    ```yaml
-    name: ultralytics
-    channels:
-      - pytorch
-      - nvidia
-      - conda-forge
-      - defaults
-    dependencies:
-      - python=3.8
-      - pytorch>=2.0.0
-      - torchvision
-      - pytorch-cuda=11.8
-      - ultralytics
-      - wandb
-      - rich
-      - numpy
-      - pandas
-      - opencv
-      - matplotlib
-      - seaborn
-      - pip
-      - pip:
-        - albumentations>=1.3.1
-    ```
-
-
-### Basic Usage
-
-1. **Prepare Your Dataset**
-
-    Ensure your dataset is organized in YOLO format with appropriate annotations. Update the `config.yml` file with the correct paths and class information.
-
-    ```yaml
-    # config.yml
-    train: path/to/train
-    val: path/to/val
-    test: path/to/test
-    nc: 5  # number of classes
-    names: ['class1', 'class2', 'class3', 'class4', 'class5']
-    ```
-
-2. **Run Training**
-
-    Execute the main training pipeline to train all YOLO models sequentially.
-
-    ```bash
-    python run.py --config config.yml --models v8,v9,v10,v11
-    ```
-
-### Advanced Usage
-
-#### Custom Training Configuration
-
-Customize training parameters to suit your specific needs.
-
-```python
-training_config = {
-    'batch_size': 16,
-    'image_size': 640,
-    'epochs': 100,
-    'optimizer': 'AdamW',
-    'lr0': 0.01,
-    'lrf': 0.001,
-    'momentum': 0.937,
-    'weight_decay': 0.0005
-}
-```
-
-#### Custom Early Stopping
-
-Adjust early stopping criteria to control training duration and prevent overfitting.
-
-```python
-early_stopping = EarlyStoppingCallback(
-    patience=20,
-    min_epochs=50,
-    max_epochs=1000,
-    map_threshold=0.85
-)
-```
-
-## Performance Optimization Tips
-
-1. **GPU Memory Management**
-   - Use appropriate batch sizes per GPU to maximize memory utilization.
-   - Enable AMP training to reduce memory footprint.
-   - Clear GPU cache between training runs using `torch.cuda.empty_cache()`.
-
-2. **Training Speed**
-   - Optimize the number of worker threads per GPU based on your system's capabilities.
-   - Enable CUDNN benchmarking (`torch.backends.cudnn.benchmark = True`) for optimized CUDA operations.
-   - Choose an appropriate image size that balances detection accuracy and computational efficiency.
-
-3. **Model Performance**
-   - Implement a robust augmentation strategy to enhance model generalization.
-   - Use learning rate scheduling to stabilize training and improve convergence.
-   - Continuously monitor validation metrics to track model improvements and detect overfitting.
+- **Implementation**:
+  ```python
+  class PerformanceMonitor:
+      def __init__(self):
+          self.metrics_history = defaultdict(list)
+          
+      def log_metrics(self, metrics):
+          for key, value in metrics.items():
+              self.metrics_history[key].append(value)
+              
+          if self.detect_anomaly(metrics):
+              self.trigger_alert()
+              
+      def generate_report(self):
+          return {
+              'detection_rate': np.mean(self.metrics_history['detection_count']),
+              'confidence_trend': self.analyze_trend('confidence'),
+              'stability_metrics': self.calculate_stability_metrics(),
+              'system_health': self.assess_system_health()
+          }
+  ```
 
 ## Contributing
 
-Contributions are welcome! Please follow these steps to contribute:
+1. Fork the Repository
+2. Create your Feature Branch
+   ```bash
+   git checkout -b feature/AmazingFeature
+   ```
+3. Commit your Changes
+   ```bash
+   git commit -m 'Add some AmazingFeature'
+   ```
+4. Push to the Branch
+   ```bash
+   git push origin feature/AmazingFeature
+   ```
+5. Open a Pull Request
 
-1. **Fork the Repository**
-2. **Create Your Feature Branch**
-    ```bash
-    git checkout -b feature/AmazingFeature
-    ```
-3. **Commit Your Changes**
-    ```bash
-    git commit -m 'Add some AmazingFeature'
-    ```
-4. **Push to the Branch**
-    ```bash
-    git push origin feature/AmazingFeature
-    ```
-5. **Open a Pull Request**
+## Documentation and Resources
 
-Please read our [Contributing Guidelines](CONTRIBUTING.md) for more details on our code of conduct and the process for submitting pull requests.
+### References
+- [PyTorch Documentation](https://pytorch.org/docs/stable/index.html)
+- [Ultralytics YOLOv8 Documentation](https://docs.ultralytics.com/)
+- [NVIDIA CUDA Toolkit](https://developer.nvidia.com/cuda-toolkit)
 
-## License
+### Papers
+- [YOLOv8 Paper](https://arxiv.org/abs/2304.00501)
+- [YOLOv9 Paper](https://arxiv.org/abs/2402.13616)
+[Additional papers...]
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+## Project Information
 
-## Acknowledgments
+### License
+MIT License - see the [LICENSE](LICENSE) file for details.
 
-- [Ultralytics](https://github.com/ultralytics) for YOLO implementations.
-- [NVIDIA](https://www.nvidia.com/) for GPU computing resources.
-- [Weights & Biases](https://wandb.ai/) for experiment tracking.
-- [DJI](https://www.dji.com/) for drone platforms.
-- [ANSYS](https://www.ansys.com/) for fluid dynamics and stress analysis tools.
-
-## Contact
-
-For questions and feedback:
-
-- Create an issue in the repository.
-- Email: [mmemari@uvu.edu](mailto:mmemari@uvu.edu)
-- **Author**: Dr. Majid Memari, Assistant Professor
-- **Department**: Computer Science
+### Contact
+- **Author**: Dr. Majid Memari
+- **Email**: [mmemari@uvu.edu](mailto:mmemari@uvu.edu)
 - **Institution**: Utah Valley University
-- **Project Link**: [https://github.com/memari-majid/Multi-GPU-Object-Detection](https://github.com/memari-majid/Multi-GPU-Object-Detection)
+- **Project Link**: [GitHub Repository](https://github.com/memari-majid/Multi-GPU-Object-Detection)
 
-## Citation
-
-If you use this work in your research, please cite:
-
+### Citation
 ```bibtex
 @software{memari2024multigpu,
   author = {Memari, Majid},
@@ -423,79 +510,3 @@ If you use this work in your research, please cite:
   url = {https://github.com/memari-majid/Multi-GPU-Object-Detection}
 }
 ```
-
-## References
-
-### Deep Learning Frameworks
-- [PyTorch Documentation](https://pytorch.org/docs/stable/index.html)
-- [Ultralytics YOLOv8 Documentation](https://docs.ultralytics.com/)
-- [NVIDIA CUDA Toolkit](https://developer.nvidia.com/cuda-toolkit)
-
-### YOLO Models
-- [YOLOv8 Paper](https://arxiv.org/abs/2304.00501)
-- [YOLOv9 Paper](https://arxiv.org/abs/2402.13616)
-- [YOLOv10 Paper](https://arxiv.org/abs/2403.00000)  <!-- Placeholder: Replace with actual link -->
-- [YOLOv11 Paper](https://arxiv.org/abs/2404.00000)  <!-- Placeholder: Replace with actual link -->
-- [Original YOLO Paper](https://arxiv.org/abs/1506.02640)
-
-### Tools and Libraries
-- [Weights & Biases Documentation](https://docs.wandb.ai/)
-- [Albumentations Documentation](https://albumentations.ai/docs/)
-- [Rich Documentation](https://rich.readthedocs.io/)
-
-### Multi-GPU Training
-- [PyTorch Distributed Training](https://pytorch.org/tutorials/intermediate/ddp_tutorial.html)
-- [NVIDIA Multi-GPU Best Practices](https://developer.nvidia.com/blog/scaling-deep-learning-training-with-pytorch-lightning/)
-
-### Thermal Imaging
-- [Thermal Image Processing Guide](https://www.flir.com/discover/rd-science/thermal-imaging-cameras-for-research-development/)
-- [UAV Thermal Imaging Best Practices](https://www.dji.com/downloads/doc/M300_RTK_Thermal_Imaging_Best_Practices.pdf)
-
-## Changelog
-
-### [1.0.0] - 2024-03-15
-- Initial release.
-- Multi-GPU training support.
-- YOLOv8-11 implementation.
-- Thermal image processing pipeline.
-
-### [1.0.1] - 2024-03-20
-- Added `environment.yml` for Conda setup.
-- Improved GPU memory management.
-- Enhanced documentation.
-
-## Future Work
-
-1. **Model Improvements**
-   - Integration of newer YOLO versions as they become available.
-   - Custom architecture modifications to better suit specific detection tasks.
-   - Model distillation for faster inference without significant loss in accuracy.
-
-2. **Training Optimizations**
-   - Advanced learning rate scheduling techniques.
-   - Further improvements in mixed precision training.
-   - Implementation of more sophisticated memory optimization techniques.
-
-3. **Deployment**
-   - Optimization for edge devices to enable on-device inference.
-   - Development of real-time processing pipelines for live data streams.
-   - Exploration of cloud deployment options for scalable object detection services.
-
-### Environment Troubleshooting
-
-1. **CUDA Issues**
-    ```bash
-    # Check CUDA availability
-    nvidia-smi
-    python -c "import torch; print(f'CUDA available: {torch.cuda.is_available()}, Version: {torch.version.cuda}')"
-    
-    # Check GPU memory
-    nvidia-smi --query-gpu=memory.used,memory.free --format=csv
-    ```
-    
-2. **Common CUDA Problems**
-    - **Mismatch between PyTorch and CUDA versions**: Ensure that the installed PyTorch version is compatible with your CUDA toolkit.
-    - **Insufficient GPU memory**: Reduce batch size or use gradient accumulation.
-    - **Driver version incompatibility**: Update NVIDIA drivers to match CUDA toolkit requirements.
-    
-    See [PyTorch CUDA Documentation](https://pytorch.org/docs/stable/cuda.html) for more details.
