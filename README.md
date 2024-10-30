@@ -468,4 +468,4 @@ Distributed under the MIT License. See `LICENSE` for more information.
 ## Contact
 
 Your Name - [your.email@example.com](mmemari@uvu)  
-Project Link: [https://github.com/yourusername/your-repo-name](https://github.com/yourusername/your-repo-name)
+Project Link: [https://github.com/yourusername/your-repo-name](https://github.com/memari-majid/Fault-Detection-Using-UAV-Thermal-Imaging)
