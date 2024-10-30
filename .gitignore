@@ -5,6 +5,7 @@
 !*.py
 !*.yml
 !*.yaml
+!*.md
 
 # But still ignore Python compilation files
 __pycache__/
