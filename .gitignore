@@ -1,0 +1,28 @@
+# Ignore everything
+*
+
+# But not Python files
+!*.py
+
+# But still ignore Python compilation files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Don't ignore .gitignore itself
+!.gitignore
+
+# Don't ignore README.md
+!README.md
+
+# Ignore specific directories even if they contain .py files
+data/
+wandb/
+runs/
+logs/
+temp/
+.ipynb_checkpoints/
+.idea/
+.vscode/
+venv/
+env/
