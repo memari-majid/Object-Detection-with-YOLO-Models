@@ -494,3 +494,81 @@ SOFTWARE.
 
 Majid Memari - [mmemari@uvu.edu](mailto:mmemari@uvu.edu)  
 Project Link: [https://github.com/memari-majid/Fault-Detection-Using-UAV-Thermal-Imaging](https://github.com/memari-majid/Fault-Detection-Using-UAV-Thermal-Imaging)
+
+## Environment Setup
+
+### Using Conda Environment
+
+1. **Create Environment from YAML**
+   ```bash
+   conda env create -f ultralytics.yml
+   ```
+
+2. **Activate Environment**
+   ```bash
+   conda activate ultralytics
+   ```
+
+3. **Verify Installation**
+   ```bash
+   python -c "import torch; print(f'PyTorch {torch.__version__}')"
+   python -c "import ultralytics; print(f'Ultralytics {ultralytics.__version__}')"
+   ```
+
+4. **Update Environment** (if needed)
+   ```bash
+   conda env update -f ultralytics.yml --prune
+   ```
+
+### Manual Environment Setup (Alternative)
+
+If you prefer to set up the environment manually:
+
+1. **Create a New Conda Environment**
+   ```bash
+   conda create -n    conda activate ultralytics python=3.8
+   conda activate    conda activate ultralytics 
+
+   ```
+
+2. **Install Core Dependencies**
+   ```bash
+   pip install torch torchvision
+   pip install ultralytics
+   pip install wandb
+   pip install rich
+   ```
+
+3. **Install Additional Dependencies**
+   ```bash
+   pip install numpy pandas opencv-python
+   pip install matplotlib seaborn
+   ```
+
+### Environment Information
+
+- Python version: 3.8.19
+- Key packages:
+  - PyTorch: 2.3.1
+  - Ultralytics: 8.3.24
+  - CUDA support: Yes (CUDA 12.1)
+  - Weights & Biases: 0.18.5
+
+### Troubleshooting
+
+If you encounter CUDA-related issues:
+1. Verify CUDA installation:
+   ```bash
+   nvidia-smi
+   python -c "import torch; print(torch.cuda.is_available())"
+   ```
+
+2. Check CUDA compatibility:
+   ```bash
+   python -c "import torch; print(f'CUDA available: {torch.cuda.is_available()}, Version: {torch.version.cuda}')"
+   ```
+
+3. Common solutions:
+   - Ensure NVIDIA drivers are up to date
+   - Match PyTorch version with CUDA version
+   - Clear GPU memory: `torch.cuda.empty_cache()`

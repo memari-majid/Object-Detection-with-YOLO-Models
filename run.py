@@ -12,6 +12,16 @@ from rich.progress import Progress, SpinnerColumn, TimeElapsedColumn
 
 console = Console()
 
+# Add this near the top of the file, after the imports
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler('training.log')
+    ]
+)
+
 class EarlyStoppingCallback:
     def __init__(self, 
                  patience=20,
@@ -124,7 +134,7 @@ def train_and_evaluate(model_name, data_yaml_path, epochs, batch_size=16, image_
             loss_threshold=0.01
         )
         
-        # Training configuration
+        # Training configuration without callbacks (removed 'callbacks' parameter)
         train_args = {
             'data': data_yaml_path,
             'epochs': epochs,
@@ -140,11 +150,15 @@ def train_and_evaluate(model_name, data_yaml_path, epochs, batch_size=16, image_
             'weight_decay': 0.0005,
             'save': True,
             'plots': True,
-            'callbacks': [early_stopping]  # Add the early stopping callback
+            # 'callbacks': [early_stopping]  # Removed early stopping callback
         }
         
         # Train model
         results = model.train(**train_args)
+        
+        # Manual Early Stopping Implementation (if supported)
+        # Note: Ultralytics YOLO may not support custom callbacks directly.
+        # You might need to monitor the training metrics externally or use built-in features.
         
         return True, None
     except Exception as e:
@@ -156,6 +170,13 @@ def main():
     # Configuration
     base_dir = '/home/majid/PycharmProjects/E5/data/obj_train_data_RGB'
     data_yaml_path = '/home/majid/PycharmProjects/E5/data/data.yml'
+    
+    # Training configuration
+    training_config = {
+        'epochs': 300,  # Added default epochs
+        'batch_size': 16,
+        'image_size': 640
+    }
     
     models = ['yolov8x.pt', 'yolov9e.pt', 'yolov10x.pt', 'yolo11x.pt']
     
@@ -173,7 +194,10 @@ def main():
         start_time = time.time()
         success, error = train_and_evaluate(
             model_name=model_name,
-            data_yaml_path=data_yaml_path
+            data_yaml_path=data_yaml_path,
+            epochs=training_config['epochs'],
+            batch_size=training_config['batch_size'],
+            image_size=training_config['image_size']
         )
         
         duration = time.time() - start_time

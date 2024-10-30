@@ -1,8 +1,10 @@
 # Ignore everything
 *
 
-# But not Python files
+# But not Python files and YAML files
 !*.py
+!*.yml
+!*.yaml
 
 # But still ignore Python compilation files
 __pycache__/
