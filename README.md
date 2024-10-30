@@ -6,24 +6,6 @@ This project advances non-destructive fault detection in small wind turbine blad
 
 The UAV-mounted thermal imaging system enables maintenance teams to detect faults without requiring turbine downtime, thereby enhancing operational efficiency. A specialized, high-resolution thermal dataset was developed to accurately represent real operational conditions, collected under various environmental settings to allow detailed inspection and analysis of blade defects. Additionally, a comparative analysis of recent object detection models, including advanced YOLO versions, assesses the adaptability of these models to wind turbine blade fault detection.
 
-## UAV and Thermal Imaging Equipment
-
-The project employs the following UAVs for data collection:
-
-- **DJI Matrice 300 RTK**
-  - **Features**: High-precision RTK capabilities, multiple payload options, extended flight time.
-  - **Purpose**: Captures high-resolution thermal and RGB images optimized for detailed blade inspections.
-
-- **DJI Mavic 3T**
-  - **Features**: Compact design, dual-camera system (thermal and RGB), high flight stability.
-  - **Purpose**: Provides flexible imaging options suitable for various inspection scenarios.
-
-These drones capture detailed images in both thermal and RGB modes, offering essential insights into the blade's structural integrity under diverse conditions.
-
-## Fluid Dynamics and Stress Analysis
-
-Complementing the UAV thermal imaging, the project incorporates fluid dynamics and stress analysis on Ryse Energy's E5 wind turbine blade. Utilizing ANSYS Fluent and static structural analysis tools, the project simulates airflow, analyzes stress distribution, and evaluates blade deformation under operational conditions. This analysis provides crucial data on how aerodynamic forces impact blade stress and deformation, contributing to a better understanding of potential failure points.
-
 ## Key Contributions
 
 1. **New High-Resolution Thermal Dataset**
@@ -41,6 +23,24 @@ Complementing the UAV thermal imaging, the project incorporates fluid dynamics a
 4. **CFD and Stress Analysis**
    - Performed Fluid-Structure Interaction (FSI) simulations and stress analysis.
    - Provided insights into aerodynamic effects on blade stability and contributed to predictions on blade fatigue life.
+
+## UAV and Thermal Imaging Equipment
+
+The project employs the following UAVs for data collection:
+
+- **DJI Matrice 300 RTK**
+  - **Features**: High-precision RTK capabilities, multiple payload options, extended flight time.
+  - **Purpose**: Captures high-resolution thermal and RGB images optimized for detailed blade inspections.
+
+- **DJI Mavic 3T**
+  - **Features**: Compact design, dual-camera system (thermal and RGB), high flight stability.
+  - **Purpose**: Provides flexible imaging options suitable for various inspection scenarios.
+
+These drones capture detailed images in both thermal and RGB modes, offering essential insights into the blade's structural integrity under diverse conditions.
+
+## Fluid Dynamics and Stress Analysis
+
+Complementing the UAV thermal imaging, the project incorporates fluid dynamics and stress analysis on Ryse Energy's E5 wind turbine blade. Utilizing ANSYS Fluent and static structural analysis tools, the project simulates airflow, analyzes stress distribution, and evaluates blade deformation under operational conditions. This analysis provides crucial data on how aerodynamic forces impact blade stress and deformation, contributing to a better understanding of potential failure points.
 
 ## Features
 
@@ -71,6 +71,115 @@ Complementing the UAV thermal imaging, the project incorporates fluid dynamics a
     ├── val.txt             # Validation set paths
     └── test.txt            # Test set paths
 ```
+
+## Installation
+
+1. **Clone the Repository**
+    ```bash
+    git clone https://github.com/memari-majid/Fault-Detection-Using-UAV-Thermal-Imaging.git
+    cd Fault-Detection-Using-UAV-Thermal-Imaging
+    ```
+
+2. **Create and Activate Virtual Environment (Recommended)**
+    ```bash
+    python -m venv venv
+    source venv/bin/activate  # Linux/Mac
+    # or
+    .\venv\Scripts\activate     # Windows
+    ```
+
+3. **Install Dependencies**
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+    *Alternatively, install individually:*
+    ```bash
+    pip install ultralytics wandb rich torch torchvision numpy
+    ```
+
+4. **Configure Weights & Biases**
+    ```bash
+    wandb login
+    ```
+
+## Environment Setup
+
+### Using Conda Environment
+
+1. **Create Environment from YAML**
+   ```bash
+   conda env create -f ultralytics.yml
+   ```
+
+2. **Activate Environment**
+   ```bash
+   conda activate ultralytics
+   ```
+
+3. **Verify Installation**
+   ```bash
+   python -c "import torch; print(f'PyTorch {torch.__version__}')"
+   python -c "import ultralytics; print(f'Ultralytics {ultralytics.__version__}')"
+   ```
+
+4. **Update Environment** (if needed)
+   ```bash
+   conda env update -f ultralytics.yml --prune
+   ```
+
+### Manual Environment Setup (Alternative)
+
+If you prefer to set up the environment manually:
+
+1. **Create a New Conda Environment**
+   ```bash
+   conda create -n    conda activate ultralytics python=3.8
+   conda activate    conda activate ultralytics 
+
+   ```
+
+2. **Install Core Dependencies**
+   ```bash
+   pip install torch torchvision
+   pip install ultralytics
+   pip install wandb
+   pip install rich
+   ```
+
+3. **Install Additional Dependencies**
+   ```bash
+   pip install numpy pandas opencv-python
+   pip install matplotlib seaborn
+   ```
+
+### Environment Information
+
+- Python version: 3.8.19
+- Key packages:
+  - PyTorch: 2.3.1
+  - Ultralytics: 8.3.24
+  - CUDA support: Yes (CUDA 12.1)
+  - Weights & Biases: 0.18.5
+
+### Troubleshooting
+
+If you encounter CUDA-related issues:
+1. Verify CUDA installation:
+   ```bash
+   nvidia-smi
+   python -c "import torch; print(torch.cuda.is_available())"
+   ```
+
+2. Check CUDA compatibility:
+   ```bash
+   python -c "import torch; print(f'CUDA available: {torch.cuda.is_available()}, Version: {torch.version.cuda}')"
+   ```
+
+3. Common solutions:
+   - Ensure NVIDIA drivers are up to date
+   - Match PyTorch version with CUDA version
+   - Clear GPU memory: `torch.cuda.empty_cache()`
 
 ## Models Overview
 
@@ -312,47 +421,6 @@ Duration: 8.75 hours
 ...
 ```
 
-## Requirements
-
-- **Python**: 3.8+
-- **PyTorch**: >= 1.7.0
-- **Ultralytics YOLO**
-- **Weights & Biases**
-- **Rich** (for enhanced console output)
-- **NumPy**
-- **CUDA-capable GPU(s)**: Recommended with 16GB+ GPU memory
-
-## Installation
-
-1. **Clone the Repository**
-    ```bash
-    git clone https://github.com/memari-majid/Fault-Detection-Using-UAV-Thermal-Imaging.git
-    cd Fault-Detection-Using-UAV-Thermal-Imaging
-    ```
-
-2. **Create and Activate Virtual Environment (Recommended)**
-    ```bash
-    python -m venv venv
-    source venv/bin/activate  # Linux/Mac
-    # or
-    .\venv\Scripts\activate     # Windows
-    ```
-
-3. **Install Dependencies**
-    ```bash
-    pip install -r requirements.txt
-    ```
-
-    *Alternatively, install individually:*
-    ```bash
-    pip install ultralytics wandb rich torch torchvision numpy
-    ```
-
-4. **Configure Weights & Biases**
-    ```bash
-    wandb login
-    ```
-
 ## Configuration
 
 ### Dataset Preparation
@@ -435,6 +503,16 @@ version_specific = {
 
     This will sequentially train YOLOv8, YOLOv9, YOLOv10, and YOLOv11 models with the specified configurations and early stopping mechanisms.
 
+## Requirements
+
+- **Python**: 3.8+
+- **PyTorch**: >= 1.7.0
+- **Ultralytics YOLO**
+- **Weights & Biases**
+- **Rich** (for enhanced console output)
+- **NumPy**
+- **CUDA-capable GPU(s)**: Recommended with 16GB+ GPU memory
+
 ## Contributing
 
 Contributions are welcome! Follow these steps to contribute:
@@ -494,81 +572,3 @@ SOFTWARE.
 
 Majid Memari - [mmemari@uvu.edu](mailto:mmemari@uvu.edu)  
 Project Link: [https://github.com/memari-majid/Fault-Detection-Using-UAV-Thermal-Imaging](https://github.com/memari-majid/Fault-Detection-Using-UAV-Thermal-Imaging)
-
-## Environment Setup
-
-### Using Conda Environment
-
-1. **Create Environment from YAML**
-   ```bash
-   conda env create -f ultralytics.yml
-   ```
-
-2. **Activate Environment**
-   ```bash
-   conda activate ultralytics
-   ```
-
-3. **Verify Installation**
-   ```bash
-   python -c "import torch; print(f'PyTorch {torch.__version__}')"
-   python -c "import ultralytics; print(f'Ultralytics {ultralytics.__version__}')"
-   ```
-
-4. **Update Environment** (if needed)
-   ```bash
-   conda env update -f ultralytics.yml --prune
-   ```
-
-### Manual Environment Setup (Alternative)
-
-If you prefer to set up the environment manually:
-
-1. **Create a New Conda Environment**
-   ```bash
-   conda create -n    conda activate ultralytics python=3.8
-   conda activate    conda activate ultralytics 
-
-   ```
-
-2. **Install Core Dependencies**
-   ```bash
-   pip install torch torchvision
-   pip install ultralytics
-   pip install wandb
-   pip install rich
-   ```
-
-3. **Install Additional Dependencies**
-   ```bash
-   pip install numpy pandas opencv-python
-   pip install matplotlib seaborn
-   ```
-
-### Environment Information
-
-- Python version: 3.8.19
-- Key packages:
-  - PyTorch: 2.3.1
-  - Ultralytics: 8.3.24
-  - CUDA support: Yes (CUDA 12.1)
-  - Weights & Biases: 0.18.5
-
-### Troubleshooting
-
-If you encounter CUDA-related issues:
-1. Verify CUDA installation:
-   ```bash
-   nvidia-smi
-   python -c "import torch; print(torch.cuda.is_available())"
-   ```
-
-2. Check CUDA compatibility:
-   ```bash
-   python -c "import torch; print(f'CUDA available: {torch.cuda.is_available()}, Version: {torch.version.cuda}')"
-   ```
-
-3. Common solutions:
-   - Ensure NVIDIA drivers are up to date
-   - Match PyTorch version with CUDA version
-   - Clear GPU memory: `torch.cuda.empty_cache()`
