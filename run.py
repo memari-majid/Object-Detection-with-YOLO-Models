@@ -22,6 +22,19 @@ logging.basicConfig(
     ]
 )
 
+# Add this function definition to initialize Weights & Biases logging
+def setup_wandb_logging(model_name, epochs, batch_size, image_size):
+    """Initialize Weights & Biases logging."""
+    wandb.init(
+        project="YOLO_training",
+        config={
+            "model": model_name,
+            "epochs": epochs,
+            "batch_size": batch_size,
+            "image_size": image_size,
+        }
+    )
+
 class EarlyStoppingCallback:
     def __init__(self, 
                  patience=20,
@@ -124,6 +137,7 @@ def train_and_evaluate(model_name, data_yaml_path, epochs, batch_size=16, image_
         
         # Load model
         model = YOLO(model_name)
+        wandb.watch(model)
         
         # Initialize early stopping
         early_stopping = EarlyStoppingCallback(
