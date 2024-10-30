@@ -485,8 +485,9 @@ SOFTWARE.
 ## Acknowledgments
 
 - [Ultralytics](https://github.com/ultralytics) for the YOLO implementation
+- [Joseph Redmon](https://pjreddie.com/) for creating the original YOLO algorithms
+- [Darknet](https://github.com/pjreddie/darknet) for the original YOLO framework
 - [Weights & Biases](https://wandb.ai/) for experiment tracking
-- Original authors of YOLO algorithms
 - [ANSYS](https://www.ansys.com/) for providing fluid dynamics and stress analysis tools
 
 ## Contact
