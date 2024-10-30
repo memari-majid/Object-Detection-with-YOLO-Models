@@ -17,6 +17,8 @@ __pycache__/
 # Don't ignore README.md
 !README.md
 
+!CONTRIBUTIONS.md # Ignore CONTRIBUTIONS.md
+
 # Ignore specific directories even if they contain .py files
 data/
 wandb/
