@@ -1,4 +1,4 @@
-# Multi-GPU Object Detection with YOLO Family Models
+# Object Detection with YOLO Models
 
 ## Project Overview
 
