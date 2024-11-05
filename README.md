@@ -479,6 +479,10 @@ class DefectDetectionPipeline:
 
 ## Documentation and Resources
 
+### Reports
+- [E5 Wind Turbine Blade Default Detection Report](https://wandb.ai/mmemari-utah-valley-university/WTB_Results/reports/E5-Wind-Turbine-Blade-Default-Detection--VmlldzoxMDA0MjQ4Ng): A comprehensive analysis of fault detection in wind turbine blades using object detection models and thermal imaging techniques.
+
+
 ### References
 - [PyTorch Documentation](https://pytorch.org/docs/stable/index.html)
 - [Ultralytics YOLOv8 Documentation](https://docs.ultralytics.com/)
