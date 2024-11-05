@@ -98,54 +98,60 @@ def train_and_evaluate(model_name, data_yaml_path):
         # Start evaluation run
         eval_run = setup_wandb_logging(model_name, "evaluation")
         
-        # Extract and log metrics
-        metrics = {
-            'model': model_name,
-            'mAP50': results.maps[0],
-            'mAP50-95': results.maps[1],
-            'precision': results.results_dict['metrics/precision(B)'],
-            'recall': results.results_dict['metrics/recall(B)'],
-            'f1-score': results.results_dict['metrics/F1(B)'],
-            'training_time': results.t_total
-        }
-        
-        # Log metrics and artifacts
-        eval_run.log(metrics)
-        
-        # Save model artifacts
-        model_artifact = wandb.Artifact(
-            name=f"{model_name.replace('.pt', '')}_model",
-            type="model",
-            description=f"Trained {model_name} for wind turbine blade defect detection"
-        )
-        model_artifact.add_file(f"WTB_Results/{model_name.replace('.pt', '')}_results/weights/best.pt")
-        eval_run.log_artifact(model_artifact)
-        
-        # Save results locally
-        save_dir = Path('evaluation_results') / model_name.replace('.pt', '')
-        save_dir.mkdir(parents=True, exist_ok=True)
-        
-        # Save detailed metrics
-        pd.DataFrame([metrics]).to_csv(
-            save_dir / 'metrics.csv',
-            index=False
-        )
-        
-        # Save training plots
-        if hasattr(results, 'plot_metrics'):
-            results.plot_metrics()
-            plt.savefig(save_dir / 'training_metrics.png')
-            plt.close()
-        
-        console.print(f"[bold green]Evaluation completed for {model_name}")
-        console.print("Metrics:", metrics)
-        
-        eval_run.finish()
-        return True, metrics
-        
+        # Extract and log metrics with error handling
+        try:
+            metrics = {
+                'model': model_name,
+                'training_time': results.t_total if hasattr(results, 't_total') else None
+            }
+            
+            # Safely extract validation metrics
+            if hasattr(results, 'results_dict'):
+                metrics.update({
+                    'precision': results.results_dict.get('metrics/precision(B)', None),
+                    'recall': results.results_dict.get('metrics/recall(B)', None),
+                    'f1-score': results.results_dict.get('metrics/F1(B)', None),
+                })
+            
+            # Safely extract mAP metrics
+            if hasattr(results, 'maps') and results.maps is not None:
+                metrics.update({
+                    'mAP50': results.maps[0] if len(results.maps) > 0 else None,
+                    'mAP50-95': results.maps[1] if len(results.maps) > 1 else None,
+                })
+            
+            # Log metrics only if they exist
+            valid_metrics = {k: v for k, v in metrics.items() if v is not None}
+            if valid_metrics:
+                eval_run.log(valid_metrics)
+                
+                # Save detailed metrics
+                save_dir = Path('evaluation_results') / model_name.replace('.pt', '')
+                save_dir.mkdir(parents=True, exist_ok=True)
+                pd.DataFrame([valid_metrics]).to_csv(
+                    save_dir / 'metrics.csv',
+                    index=False
+                )
+                
+                console.print(f"[bold green]Evaluation completed for {model_name}")
+                console.print("Metrics:", valid_metrics)
+            else:
+                console.print(f"[bold yellow]Warning: No valid metrics found for {model_name}")
+            
+            return True, valid_metrics
+            
+        except Exception as metric_error:
+            console.print(f"[bold yellow]Warning: Error extracting metrics: {str(metric_error)}")
+            return True, {'model': model_name, 'error': str(metric_error)}
+            
     except Exception as e:
         console.print(f"[bold red]Error processing {model_name}: {str(e)}")
         return False, str(e)
+    finally:
+        if 'train_run' in locals():
+            train_run.finish()
+        if 'eval_run' in locals():
+            eval_run.finish()
 
 def main():
     # Configuration
