@@ -387,3 +387,149 @@ If you use this code in your research, please cite:
     institution = {Utah Valley University}
 }
 ```
+
+## Dataset Analysis Results
+
+### 1. Dataset Overview
+```python
+dataset_stats = {
+    'total_images': 338,
+    'processed_images': 103,
+    'total_defects': 110,
+    'defects_per_image': 1.07,
+    'processing_success_rate': '30.47%'  # (103/338 * 100)
+}
+```
+
+### 2. Defect Size Distribution
+```python
+size_distribution = {
+    'tiny': 0,          # 0% of defects
+    'very_small': 20,   # 18.18% of defects
+    'small': 63,        # 57.27% of defects
+    'medium': 26,       # 23.64% of defects
+    'large': 1          # 0.91% of defects
+}
+```
+
+### 3. Key Findings
+
+#### Size Analysis
+1. **Predominant Size Category**: Small defects (57.27%)
+   - Most defects fall in the 0.1-1% of image area range
+   - Indicates need for high-resolution processing
+
+2. **Size Distribution Challenges**:
+   - Very small defects: Significant portion (18.18%)
+   - Medium defects: Notable presence (23.64%)
+   - Large defects: Rare (0.91%)
+
+#### Detection Difficulty
+```python
+difficulty_distribution = {
+    'high': 110,    # 100% of defects
+    'medium': 0,    # 0% of defects
+    'low': 0        # 0% of defects
+}
+```
+
+#### Implications for Model Design:
+1. **Resolution Requirements**
+   - Need for high-resolution input (1920px) due to small defect prevalence
+   - Multi-scale feature extraction essential
+
+2. **Model Architecture Considerations**
+   ```python
+   architecture_recommendations = {
+       'backbone': 'high_capacity',      # For detailed feature extraction
+       'neck': 'feature_pyramid',        # For multi-scale detection
+       'head': 'multi_scale_anchors',    # For varied defect sizes
+       'attention': 'spatial_attention'   # For focusing on subtle features
+   }
+   ```
+
+3. **Training Strategy Adjustments**
+   ```python
+   training_adjustments = {
+       'batch_size': 2,              # Limited by high resolution
+       'augmentation': 'aggressive',  # For small object detection
+       'loss_weights': {
+           'small_objects': 1.5,     # Higher weight for small defects
+           'medium_objects': 1.0,    # Standard weight
+           'large_objects': 0.8      # Lower weight due to rarity
+       }
+   }
+   ```
+
+### 4. Recommendations
+
+#### A. Model Configuration
+1. **Architecture Selection**
+   - Use larger YOLO variants (YOLOv11x)
+   - Implement additional attention mechanisms
+   - Add feature pyramid enhancement
+
+2. **Input Processing**
+   - Maintain high resolution (1920px)
+   - Implement multi-scale training
+   - Use adaptive tiling for very large images
+
+#### B. Training Strategy
+1. **Data Augmentation**
+   ```python
+   augmentation_strategy = {
+       'geometric': {
+           'rotation': '±10°',
+           'scale': [0.8, 1.2],
+           'flip': 'horizontal_vertical'
+       },
+       'intensity': {
+           'contrast': '±0.3',
+           'brightness': '±0.2',
+           'noise': 'gaussian_speckle'
+       },
+       'mixing': {
+           'mosaic': 0.9,
+           'mixup': 0.2,
+           'copy_paste': 0.3
+       }
+   }
+   ```
+
+2. **Loss Function**
+   ```python
+   loss_configuration = {
+       'box_loss_weight': 10.0,     # Higher weight for localization
+       'cls_loss_weight': 0.3,      # Lower for binary classification
+       'dfl_loss_weight': 2.0,      # Enhanced boundary definition
+       'size_aware_weight': True    # Dynamic weighting based on size
+   }
+   ```
+
+### 5. Performance Optimization
+1. **Memory Management**
+   - Gradient checkpointing
+   - Mixed precision training
+   - Batch size optimization
+
+2. **Speed Optimization**
+   ```python
+   optimization_strategy = {
+       'mixed_precision': True,
+       'gradient_checkpointing': True,
+       'batch_accumulation': 4,
+       'num_workers': 8
+   }
+   ```
+
+### 6. Validation Strategy
+```python
+validation_strategy = {
+    'metrics': ['mAP50', 'mAP50-95', 'recall_small'],
+    'confidence_threshold': 0.1,    # Lower for small objects
+    'iou_threshold': 0.4,          # Adjusted for small objects
+    'size_specific_evaluation': True
+}
+```
+
+This analysis suggests a challenging dataset with predominantly small defects requiring specialized detection strategies. The high difficulty scores across all defects indicate the need for robust model architecture and careful training procedures.
