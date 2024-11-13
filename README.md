@@ -84,7 +84,7 @@ PARAMETER_PRESETS = {
         # Training Stability
         'cos_lr': True,       # Cosine learning rate schedule
         'patience': 100,      # High patience for convergence
-        'workers': 8,         # Number of worker threads
+        'workers': 10,         # Number of worker threads
         'label_smoothing': 0.15, # Label smoothing factor
         'overlap_mask': True, # Mask overlap handling
         'warmup_epochs': 25,  # Extended warmup period
