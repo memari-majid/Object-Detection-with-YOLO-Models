@@ -28,7 +28,7 @@ This project implements advanced object detection for wind turbine blade defects
 
 Train a specific model with optimized small object detection parameters:
 ```bash
-python run.py --dataset clean --preset yolo11_small_focused --models yolo11x
+python main.py --dataset clean --preset yolo11_small_focused --models yolo11x
 ```
 
 ### Available Parameters
@@ -197,7 +197,7 @@ names: ['defect']
 
 ```
 .
-├── run.py                 # Main training script
+├── main.py                # Main training script (previously run.py)
 ├── data_clean/           # Clean dataset directory
 │   ├── data_clean.yml    # Dataset configuration
 │   ├── train_clean.txt   # Training image paths
@@ -214,17 +214,11 @@ names: ['defect']
    - Verification of all required files
    - Automatic path validation
 
-2. **Model Training**:
+2. **Model Training** (via main.py):
    - Multi-GPU initialization
    - Parameter preset application
    - Progress tracking with Weights & Biases
    - Comprehensive metric logging
-
-3. **Evaluation**:
-   - Automated validation on test set
-   - Misclassification analysis
-   - Performance visualization
-   - Metric comparison across models
 
 ## Results and Visualization
 
