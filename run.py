@@ -1,3 +1,88 @@
+"""
+Wind Turbine Blade Defect Detection Training Script
+================================================
+
+This script trains and evaluates YOLO models for detecting defects in wind turbine blades,
+with a specific focus on small defect detection. It supports multiple dataset configurations
+and parameter presets optimized for small object detection.
+
+Key Features:
+------------
+1. Multiple dataset support (clean and full datasets)
+2. Optimized parameter presets for small object detection
+3. Comprehensive logging with Weights & Biases
+4. Detailed misclassification analysis
+5. Performance visualization and comparison
+
+Usage:
+------
+Basic usage:
+    python run.py
+
+With specific configuration:
+    python run.py --dataset clean --preset yolo11_small_focused --models yolo11x
+
+Available arguments:
+    --dataset: clean, full
+    --preset: yolo11_small_objects, yolo11_small_focused
+    --models: yolo11x
+
+Parameter Presets:
+----------------
+1. yolo11_small_objects:
+   - Base configuration optimized for small defect detection
+   - Higher resolution (1536px)
+   - Balanced augmentation strategy
+   - Extended training duration (300 epochs)
+
+2. yolo11_small_focused:
+   - Aggressive configuration for very small defects
+   - Maximum resolution (1920px)
+   - Intensive augmentation
+   - Extended training duration (400 epochs)
+
+Dataset Structure:
+----------------
+Expected directory structure:
+    data_clean/
+        ├── data_clean.yml
+        ├── train_clean.txt
+        ├── val_clean.txt
+        └── test_clean.txt
+
+    data/
+        ├── data.yml
+        ├── train.txt
+        ├── val.txt
+        └── test.txt
+
+Requirements:
+------------
+- Python 3.8+
+- PyTorch 1.7+
+- Ultralytics YOLO
+- Weights & Biases
+- OpenCV
+- Rich (for console output)
+- Pandas
+- Matplotlib
+
+Environment Variables:
+-------------------
+- WANDB_API_KEY: Weights & Biases API key for logging
+
+Notes:
+-----
+- Ensure sufficient GPU memory for high-resolution training
+- Monitor GPU temperature during extended training sessions
+- Backup trained models periodically
+- Check wandb.ai for detailed training metrics and visualizations
+
+Author: [Majid Memari]
+Date: [2024-11-13]
+Version: 1.0
+"""
+
 import os
 import wandb
 from ultralytics import YOLO
@@ -15,6 +100,119 @@ import yaml
 
 console = Console()
 
+# Dataset Configuration
+DATASET_CONFIG = {
+    'clean': {
+        'yaml_path': 'data_clean/data_clean.yml',
+        'description': 'Clean dataset with filtered images',
+        'project_name': 'WTB_Results_Clean'
+    },
+    'full': {
+        'yaml_path': 'data/data.yml',
+        'description': 'Full dataset with all images',
+        'project_name': 'WTB_Results_Full'
+    }
+}
+
+# Model Configuration
+MODELS = {
+    'yolov8x': {
+        'path': 'yolov8x.pt',
+        'description': 'YOLOv8 extra large'
+    },
+    'yolov9e': {
+        'path': 'yolov9e.pt',
+        'description': 'YOLOv9 efficient'
+    },
+    'yolov10x': {
+        'path': 'yolov10x.pt',
+        'description': 'YOLOv10 extra large'
+    },
+    'yolo11x': {
+        'path': 'yolo11x.pt',
+        'description': 'YOLOv11 extra large'
+    }
+}
+
+# Training Parameter Presets - Updated with valid batch size for 2 GPUs
+PARAMETER_PRESETS = {
+    'yolo11_small_focused': {  # Even more focused on tiny objects
+        'epochs': 400,         # More epochs
+        'imgsz': 1920,         # Maximum resolution
+        'batch': 2,            # Changed from 1 to 2 to be divisible by 2 GPUs
+        'optimizer': 'AdamW',
+        'lr0': 0.0001,        # Very low learning rate
+        'lrf': 0.000001,      # Very low final learning rate
+        # Augmentation
+        'mosaic': 1.0,
+        'scale': 0.2,         # More aggressive scaling (0.2-1.8)
+        'flipud': 0.7,
+        'fliplr': 0.7,
+        'augment': True,
+        'degrees': 10.0,
+        'translate': 0.3,
+        'perspective': 0.001,
+        'shear': 3.0,
+        # Training stability
+        'cos_lr': True,
+        'patience': 100,      # Very high patience
+        'workers': 8,
+        'label_smoothing': 0.15,
+        'overlap_mask': True,
+        'warmup_epochs': 25,  # Extended warmup
+        'weight_decay': 0.001,
+        'momentum': 0.937,
+        # Loss weights
+        'box': 10.0,         # Increased box loss gain
+        'cls': 0.3,          # Class loss gain
+        'dfl': 2.0,          # DFL loss gain
+        # Additional settings
+        'close_mosaic': 15,
+        'mixup': 0.2,
+        'copy_paste': 0.4,
+        'hsv_h': 0.015,
+        'hsv_s': 0.8,
+        'hsv_v': 0.5,
+        'device': '0,1',
+        'exist_ok': True,
+        'project': 'WTB_Results'
+    }
+}
+
+# Validation Parameter Presets - Updated for small objects
+VAL_PARAMS = {
+    'yolo11_small_objects': {
+        'imgsz': 1536,
+        'batch': 1,
+        'device': '0,1',
+        'conf': 0.15,        # Lower confidence threshold
+        'iou': 0.45         # Lower IoU threshold
+    },
+    'yolo11_small_focused': {
+        'imgsz': 1920,
+        'batch': 2,          # Changed from 1 to 2 to be divisible by 2 GPUs
+        'device': '0,1',
+        'conf': 0.1,         # Very low confidence threshold
+        'iou': 0.4          # Lower IoU threshold
+    }
+}
+
+# Default Configuration - Allow all models
+DEFAULT_CONFIG = {
+    'dataset': 'clean',
+    'parameter_preset': 'yolo11_small_focused',  # Default to small object configuration
+    'models': ['yolov8x', 'yolov9e', 'yolov10x', 'yolo11x'],  # All models available
+    'device': '0,1'
+}
+
+# Update all parameter presets with common settings
+for preset in PARAMETER_PRESETS.values():
+    preset.update({
+        'device': DEFAULT_CONFIG['device'],
+        'exist_ok': True,
+        'project': 'WTB_Results'  # Will be updated based on dataset
+    })
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -25,66 +223,37 @@ logging.basicConfig(
     ]
 )
 
-def filter_grass_images(file_path):
-    """Filter and keep only Grass images from the given file."""
-    try:
-        # Read the original file
-        with open(file_path, 'r') as f:
-            image_paths = f.readlines()
-        
-        # Filter only Grass images
-        grass_images = [path.strip() for path in image_paths if 'Grass' in path]
-        
-        # Create a new file for Grass images
-        grass_file = str(Path(file_path)).replace('.txt', '_grass.txt')
-        with open(grass_file, 'w') as f:
-            f.write('\n'.join(grass_images))
-        
-        console.print(f"[green]Filtered {len(grass_images)} Grass images from {len(image_paths)} total images in {file_path}")
-        return grass_file
-        
-    except Exception as e:
-        console.print(f"[bold red]Error filtering Grass images from {file_path}: {str(e)}")
-        return None
-
-def prepare_grass_dataset():
-    """Prepare train, val, and test datasets with only Grass images."""
-    try:
-        dataset_files = {
-            'train': Path('data/train.txt'),
-            'val': Path('data/val.txt'),
-            'test': Path('data/test.txt')
-        }
-        
-        grass_files = {}
-        
-        for dataset_type, file_path in dataset_files.items():
-            if not file_path.exists():
-                console.print(f"[bold red]Error: {file_path} not found")
-                return None
-                
-            grass_file = filter_grass_images(file_path)
-            if not grass_file:
-                return None
-            grass_files[dataset_type] = grass_file
-            
-        return grass_files
-        
-    except Exception as e:
-        console.print(f"[bold red]Error preparing Grass dataset: {str(e)}")
-        return None
-
 def setup_wandb_logging(model_name, run_type="training"):
-    """Initialize Weights & Biases logging with better organization."""
+    """
+    Initialize Weights & Biases logging for training or evaluation runs.
+
+    Parameters:
+    -----------
+    model_name : str
+        Name of the YOLO model being trained/evaluated
+    run_type : str, optional
+        Type of run ('training' or 'evaluation'), default is 'training'
+
+    Returns:
+    --------
+    wandb.Run
+        Initialized Weights & Biases run object
+
+    Notes:
+    ------
+    - Creates unique run names using timestamps
+    - Includes all training parameters in configuration
+    - Groups runs by model name for easier comparison
+    """
     timestamp = datetime.now().strftime('%Y%m%d_%H%M')
     model_base_name = model_name.replace('.pt', '')
     
     if run_type == "training":
-        project_name = "WTB_Defect_Detection_Grass"  # Updated project name
-        run_name = f"{model_base_name}/grass_training_{timestamp}"
+        project_name = "WTB_Defect_Detection_Clean"
+        run_name = f"{model_base_name}/clean_training_{timestamp}"
     else:  # evaluation
-        project_name = "WTB_Model_Evaluation_Grass"
-        run_name = f"{model_base_name}/grass_evaluation_{timestamp}"
+        project_name = "WTB_Model_Evaluation_Clean"
+        run_name = f"{model_base_name}/clean_evaluation_{timestamp}"
     
     return wandb.init(
         project=project_name,
@@ -93,29 +262,56 @@ def setup_wandb_logging(model_name, run_type="training"):
         job_type=run_type,
         config={
             "model": model_name,
-            "epochs": 10,
-            "batch_size": 16,
-            "image_size": 640,
-            "dataset": "wind_turbine_blades_grass_only",
-            "defect_types": ["crack", "erosion"]
+            **PARAMETER_PRESETS['yolo11_small_focused'],  # Use the specific preset
+            "dataset": "wind_turbine_blades_clean",
+            "defect_types": ["defect"]
         },
         reinit=True
     )
 
-def analyze_misclassifications(model, grass_files, model_name, results_dir):
-    """Analyze and save misclassified examples with detailed annotations."""
+def analyze_misclassifications(model, data_yaml_path, model_name, results_dir):
+    """
+    Analyze and visualize model misclassifications on the test set.
+
+    Parameters:
+    -----------
+    model : YOLO
+        Trained YOLO model
+    data_yaml_path : str
+        Path to dataset YAML configuration
+    model_name : str
+        Name of the model being analyzed
+    results_dir : str
+        Directory to save analysis results
+
+    Returns:
+    --------
+    dict or None
+        Statistics about misclassifications if successful, None if failed
+
+    Saves:
+    ------
+    - Annotated images of misclassified examples
+    - CSV summary of misclassifications
+    - JSON file with statistics
+    """
     try:
         # Create directory for misclassified examples
         misc_dir = Path(results_dir) / f"{model_name.replace('.pt', '')}_misclassified"
         misc_dir.mkdir(parents=True, exist_ok=True)
         
-        # Run validation on test set to get predictions
-        results = model.val(data=grass_files['test'])
+        # Load test set path from yaml
+        with open(data_yaml_path, 'r') as f:
+            data_config = yaml.safe_load(f)
+            test_path = data_config['test']
+        
+        # Run validation on test set
+        results = model.val(data=data_yaml_path, split='test')
         
         misclassified_info = []
         
         # Process each image in the test set
-        with open(grass_files['test'], 'r') as f:
+        with open(test_path, 'r') as f:
             test_images = f.readlines()
         
         for idx, img_path in enumerate(test_images):
@@ -227,66 +423,54 @@ def analyze_misclassifications(model, grass_files, model_name, results_dir):
         console.print(f"[bold red]Error analyzing misclassifications: {str(e)}")
         return None
 
-def train_and_evaluate(model_name, data_yaml_path):
-    """Train and evaluate a single YOLO model using clean Grass images."""
+def train_and_evaluate(model_name, data_yaml_path, training_params, val_params):
+    """
+    Train and evaluate a YOLO model with specified parameters.
+
+    Parameters:
+    -----------
+    model_name : str
+        Path to the YOLO model weights
+    data_yaml_path : str
+        Path to dataset configuration YAML
+    training_params : dict
+        Training parameters and hyperparameters
+    val_params : dict
+        Validation parameters
+
+    Returns:
+    --------
+    tuple
+        (success: bool, metrics: dict)
+        success: Whether training completed successfully
+        metrics: Dictionary of evaluation metrics
+
+    Features:
+    ---------
+    - Wandb logging for both training and evaluation
+    - Comprehensive metric collection
+    - Misclassification analysis
+    - Result visualization
+    """
     try:
         # Initialize training run
         train_run = setup_wandb_logging(model_name, "training_clean")
-        console.print(f"\n[bold blue]Starting training for {model_name} with clean Grass images")
+        console.print(f"\n[bold blue]Starting training for {model_name} with clean dataset")
         
         # Load model
         model = YOLO(model_name)
         
-        # Train with modified parameters for clean dataset
+        # Train using defined parameters
         results = model.train(
             data=data_yaml_path,
-            epochs=150,  # Increased epochs for better learning
-            imgsz=640,
-            batch=8,    # Reduced batch size for smaller dataset
-            device='0,1',
-            workers=8,
-            optimizer='AdamW',
-            lr0=0.001,  # Reduced learning rate for stability
-            lrf=0.0001,
-            momentum=0.937,
-            weight_decay=0.0005,
-            save=True,
-            plots=True,
-            name=f"{model_name.replace('.pt', '')}_clean_results",
-            project='WTB_Results_Clean',
-            exist_ok=True,
-            
-            # Disable augmentations
-            augment=False,
-            mosaic=0.0,
-            mixup=0.0,
-            copy_paste=0.0,
-            degrees=0.0,
-            translate=0.0,
-            scale=0.0,
-            shear=0.0,
-            perspective=0.0,
-            flipud=0.0,
-            fliplr=0.0,
-            hsv_h=0.0,
-            hsv_s=0.0,
-            hsv_v=0.0,
-            
-            # Training parameters
-            cos_lr=True,
-            warmup_epochs=5,  # Increased warmup
-            label_smoothing=0.1,
-            overlap_mask=True,
-            patience=20  # Increased patience for better convergence
+            **training_params
         )
         
-        # Validate the model
+        # Validate the model using validation parameters
         val_results = model.val(
             data=data_yaml_path,
-            split='test',  # Use test split for final validation
-            imgsz=640,
-            batch=16,
-            device='0,1'
+            split='test',
+            **val_params
         )
         
         # Close training run
@@ -319,7 +503,7 @@ def train_and_evaluate(model_name, data_yaml_path):
             if valid_metrics:
                 eval_run.log(valid_metrics)
                 
-                save_dir = Path('evaluation_results_grass') / model_name.replace('.pt', '')
+                save_dir = Path('evaluation_results_clean') / model_name.replace('.pt', '')
                 save_dir.mkdir(parents=True, exist_ok=True)
                 pd.DataFrame([valid_metrics]).to_csv(
                     save_dir / 'metrics.csv',
@@ -335,9 +519,9 @@ def train_and_evaluate(model_name, data_yaml_path):
             console.print("\n[bold blue]Analyzing misclassifications...")
             misclassification_stats = analyze_misclassifications(
                 model, 
-                grass_files,
+                data_yaml_path,
                 model_name,
-                f"WTB_Results_Grass/{model_name.replace('.pt', '')}_grass_results"
+                f"WTB_Results_Clean/{model_name.replace('.pt', '')}_clean_results"
             )
             
             if misclassification_stats:
@@ -361,40 +545,6 @@ def train_and_evaluate(model_name, data_yaml_path):
             train_run.finish()
         if 'eval_run' in locals():
             eval_run.finish()
-
-def create_grass_data_yaml(original_yaml_path):
-    """Create a new data.yml file specifically for Grass dataset."""
-    try:
-        # Read original data.yml
-        with open(original_yaml_path, 'r') as f:
-            data_config = yaml.safe_load(f)
-        
-        # Get the absolute path to the project root
-        project_root = Path.cwd().absolute()
-        
-        # Update paths for Grass-only files with absolute paths
-        grass_config = {
-            'path': str(project_root / 'data/obj_train_data_RGB'),  # Base dataset directory
-            'train': str(project_root / 'data/train_grass.txt'),    # Train file
-            'val': str(project_root / 'data/val_grass.txt'),        # Val file
-            'test': str(project_root / 'data/test_grass.txt'),      # Test file
-            'nc': data_config['nc'],                                # Keep original number of classes
-            'names': data_config['names']                           # Keep original class names
-        }
-        
-        # Save new Grass-specific data.yml
-        grass_yaml_path = str(project_root / 'data/data_grass.yml')
-        with open(grass_yaml_path, 'w') as f:
-            yaml.dump(grass_config, f, default_flow_style=False)
-            
-        console.print(f"[green]Created Grass data YAML at {grass_yaml_path}")
-        console.print(f"[blue]Config contents: {grass_config}")
-            
-        return grass_yaml_path
-        
-    except Exception as e:
-        console.print(f"[bold red]Error creating Grass data.yml: {str(e)}")
-        return None
 
 def create_base_data_yaml():
     """Create base data.yml if it doesn't exist."""
@@ -490,52 +640,128 @@ def organize_annotated_images(grass_files, output_base_dir):
         return False
 
 def main():
-    # Change this line to match the actual path from create_clean_dataset.py
-    data_yaml_path = 'data_clean/data_clean.yml'  # This is where the file was actually created
+    """
+    Main execution function for training and evaluation pipeline.
+
+    Features:
+    ---------
+    - Command line argument parsing
+    - Dataset validation
+    - Model availability checking
+    - Training execution
+    - Results comparison and visualization
+    - Error handling and logging
+
+    Command Line Arguments:
+    ---------------------
+    --dataset : str
+        Dataset configuration to use
+    --preset : str
+        Parameter preset for training
+    --models : list
+        Models to train and evaluate
+
+    Outputs:
+    --------
+    - Training logs
+    - Evaluation metrics
+    - Comparison plots
+    - Misclassification analysis
+    """
+    # Allow command line arguments or use defaults
+    import argparse
+    parser = argparse.ArgumentParser(description='Train YOLO models on WTB dataset')
+    parser.add_argument('--dataset', choices=list(DATASET_CONFIG.keys()), 
+                       default=DEFAULT_CONFIG['dataset'],
+                       help='Dataset to use for training')
+    parser.add_argument('--preset', choices=list(PARAMETER_PRESETS.keys()),
+                       default=DEFAULT_CONFIG['parameter_preset'],
+                       help='Parameter preset to use')
+    parser.add_argument('--models', nargs='+', choices=list(MODELS.keys()),
+                       default=DEFAULT_CONFIG['models'],
+                       help='Models to train')
+    
+    # Parse arguments only once
+    args = parser.parse_args()
+    
+    console.print("\n[bold blue]Starting training with configuration:")
+    console.print(f"Dataset: {args.dataset}")
+    console.print(f"Preset: {args.preset}")
+    console.print(f"Models: {args.models}")
+    
+    # Print the actual parameters being used
+    console.print("\n[bold yellow]Training Parameters:")
+    for key, value in PARAMETER_PRESETS[args.preset].items():
+        console.print(f"{key}: {value}")
+    
+    # Get dataset configuration
+    dataset_config = DATASET_CONFIG[args.dataset]
+    data_yaml_path = dataset_config['yaml_path']
+    
     if not Path(data_yaml_path).exists():
-        console.print("[bold red]Clean dataset not found. Run prepare_clean_dataset.py first.")
+        console.print(f"[bold red]Dataset not found at {data_yaml_path}")
         return
     
-    models = [
-        'yolo8x.pt',
-        'yolo9e.pt',
-        'yolo10x.pt',
-        'yolo11x.pt'
-    ]
+    # Verify the data files exist
+    with open(data_yaml_path, 'r') as f:
+        data_config = yaml.safe_load(f)
+        required_files = [data_config['train'], data_config['val'], data_config['test']]
+        
+    for file_path in required_files:
+        if not Path(file_path).exists():
+            console.print(f"[bold red]Error: Required file {file_path} not found")
+            return
+    
+    # Get training parameters
+    training_params = PARAMETER_PRESETS[args.preset].copy()
+    training_params['project'] = dataset_config['project_name']
+    val_params = VAL_PARAMS[args.preset].copy()
+    
+    # Print configuration
+    console.print("\n[bold blue]Training Configuration:")
+    console.print(f"Dataset: {dataset_config['description']}")
+    console.print(f"Parameter Preset: {args.preset}")
+    console.print(f"Models to train: {args.models}")
     
     all_results = []
     
+    # Check for available models
     console.print("\n[bold blue]Available model files in directory:")
-    for file in Path('.').glob('*.pt'):
-        console.print(f"Found: {file}")
+    for model_name in args.models:
+        model_info = MODELS[model_name]
+        model_path = Path(model_info['path'])
+        if model_path.exists():
+            console.print(f"[green]Found: {model_info['path']} - {model_info['description']}")
+        else:
+            console.print(f"[red]Missing: {model_info['path']} - {model_info['description']}")
     
-    for model_name in models:
-        model_path = Path(model_name)
+    # Train models
+    for model_name in args.models:
+        model_info = MODELS[model_name]
+        model_path = Path(model_info['path'])
         if not model_path.exists():
-            console.print(f"[bold red]Error: Model file {model_name} not found. Skipping...")
+            console.print(f"[bold red]Error: Model file {model_info['path']} not found. Skipping...")
             continue
-            
-        if not Path(data_yaml_path).exists():
-            console.print(f"[bold red]Error: {data_yaml_path} not found")
-            continue
-            
-        console.print(f"[bold green]Found model file: {model_name}")
-        success, result = train_and_evaluate(model_name, data_yaml_path)
+        
+        console.print(f"[bold blue]Training {model_info['description']}")
+        success, result = train_and_evaluate(model_info['path'], data_yaml_path, 
+                                           training_params, val_params)
         if success:
             all_results.append(result)
     
     if all_results:
-        console.print("\n[bold yellow]Final Model Comparison (Grass Images Only):")
+        console.print("\n[bold yellow]Final Model Comparison (Clean Dataset):")
         comparison_df = pd.DataFrame(all_results)
         console.print(comparison_df.to_string())
         
+        # Create comparison plot
         try:
             import matplotlib.pyplot as plt
             
             metrics_to_plot = ['mAP50', 'mAP50-95', 'precision', 'recall', 'f1-score']
             plt.figure(figsize=(12, 6))
             
-            x = np.arange(len(models))
+            x = np.arange(len(MODELS))
             width = 0.15
             multiplier = 0
             
@@ -546,22 +772,16 @@ def main():
             
             plt.xlabel('Models')
             plt.ylabel('Scores')
-            plt.title('YOLO Models Performance Comparison (Grass Images Only)')
-            plt.xticks(x + width * 2, models, rotation=45)
+            plt.title('YOLO Models Performance Comparison (Clean Dataset)')
+            plt.xticks(x + width * 2, MODELS.keys(), rotation=45)
             plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
             plt.tight_layout()
             
-            plt.savefig('evaluation_results_grass/model_comparison.png')
+            plt.savefig('evaluation_results_clean/model_comparison.png')
             plt.close()
             
         except Exception as e:
             console.print(f"[bold red]Error creating comparison plot: {str(e)}")
-    
-    # Add this after preparing grass dataset
-    grass_files = prepare_grass_dataset()
-    if grass_files:
-        console.print("\n[bold blue]Organizing and annotating images...")
-        organize_annotated_images(grass_files, "annotated_grass_images")
 
 if __name__ == "__main__":
     main()
