@@ -156,7 +156,7 @@ PARAMETER_PRESETS = {
         # Training stability
         'cos_lr': True,
         'patience': 100,      # Very high patience
-        'workers': 8,
+        'workers': 10,
         'label_smoothing': 0.15,
         'overlap_mask': True,
         'warmup_epochs': 25,  # Extended warmup
