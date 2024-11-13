@@ -54,18 +54,144 @@ python run.py --dataset clean --preset yolo11_small_focused --models yolo11x
 
 #### Small Object Detection Parameters
 ```python
+# Training Parameters for YOLOv11 Small Object Detection
 PARAMETER_PRESETS = {
     'yolo11_small_focused': {
-        'epochs': 400,         # Extended training
-        'imgsz': 1920,        # Maximum resolution
+        # Basic Training Parameters
+        'epochs': 400,         # Extended training duration
+        'imgsz': 1920,        # Maximum resolution for small object detection
         'batch': 2,           # Optimized for 2 GPUs
-        'optimizer': 'AdamW',
-        'lr0': 0.0001,        # Fine-tuned learning rate
-        'augment': True,      # Enhanced augmentation
-        # ... additional parameters
+        'device': '0,1',      # Multi-GPU utilization
+        
+        # Optimizer Configuration
+        'optimizer': 'AdamW',  # Advanced optimizer
+        'lr0': 0.0001,        # Very low learning rate for fine details
+        'lrf': 0.000001,      # Final learning rate
+        'momentum': 0.937,    # Optimizer momentum
+        'weight_decay': 0.001,# Weight decay for regularization
+        
+        # Augmentation Strategy
+        'mosaic': 1.0,        # Maximum mosaic augmentation
+        'scale': 0.2,         # Aggressive scaling (0.2-1.8)
+        'flipud': 0.7,        # Vertical flip probability
+        'fliplr': 0.7,        # Horizontal flip probability
+        'augment': True,      # Enable augmentation
+        'degrees': 10.0,      # Rotation range
+        'translate': 0.3,     # Translation range
+        'perspective': 0.001, # Perspective transformation
+        'shear': 3.0,        # Shearing range
+        
+        # Training Stability
+        'cos_lr': True,       # Cosine learning rate schedule
+        'patience': 100,      # High patience for convergence
+        'workers': 8,         # Number of worker threads
+        'label_smoothing': 0.15, # Label smoothing factor
+        'overlap_mask': True, # Mask overlap handling
+        'warmup_epochs': 25,  # Extended warmup period
+        
+        # Loss Functions
+        'box': 10.0,         # Box loss weight
+        'cls': 0.3,          # Classification loss weight
+        'dfl': 2.0,          # DFL loss weight
+        
+        # Advanced Augmentation
+        'close_mosaic': 15,  # Disable mosaic in final epochs
+        'mixup': 0.2,        # Mixup augmentation
+        'copy_paste': 0.4,   # Copy-paste augmentation
+        'hsv_h': 0.015,      # HSV hue augmentation
+        'hsv_s': 0.8,        # HSV saturation augmentation
+        'hsv_v': 0.5,        # HSV value augmentation
+    }
+}
+
+# Validation Parameters
+VAL_PARAMS = {
+    'yolo11_small_focused': {
+        'imgsz': 1920,       # Match training resolution
+        'batch': 2,          # Validation batch size
+        'device': '0,1',     # Use both GPUs
+        'conf': 0.1,         # Low confidence threshold for small objects
+        'iou': 0.4          # IoU threshold
     }
 }
 ```
+
+### Hardware Requirements
+
+#### GPU Configuration
+- Number of GPUs: 2
+- Minimum GPU Memory: 16GB per GPU
+- Recommended GPU: NVIDIA RTX 3090 or better
+- CUDA Version: 11.7 or higher
+
+#### System Requirements
+- RAM: 64GB minimum
+- Storage: 500GB SSD recommended
+- CPU: 8+ cores recommended
+- OS: Ubuntu 20.04 or higher
+
+### Dataset Specifications
+
+#### Clean Dataset Structure
+```yaml
+path: data_clean/obj_train_data_RGB
+train: data_clean/train_clean.txt
+val: data_clean/val_clean.txt
+test: data_clean/test_clean.txt
+nc: 1  # Number of classes
+names: ['defect']
+```
+
+#### Image Specifications
+- Resolution: Up to 1920x1920
+- Format: JPG/JPEG
+- Color Space: RGB
+- Annotation Format: YOLO txt format
+
+### Training Process Details
+
+#### Initialization
+- Multi-GPU synchronization
+- Automatic batch size adjustment
+- Memory cache clearing
+- Gradient synchronization
+
+#### Training Phases
+1. **Warmup Phase** (25 epochs):
+   - Gradually increasing learning rate
+   - Full augmentation enabled
+   - All GPUs synchronized
+
+2. **Main Training Phase** (350 epochs):
+   - Cosine learning rate scheduling
+   - Advanced augmentation pipeline
+   - Regular validation checks
+
+3. **Fine-tuning Phase** (25 epochs):
+   - Reduced learning rate
+   - Disabled mosaic augmentation
+   - Final model optimization
+
+#### Monitoring and Logging
+- Real-time metric tracking
+- GPU memory usage monitoring
+- Training progress visualization
+- Automatic checkpoint saving
+
+### Performance Metrics
+
+#### Training Metrics
+- Loss components (box, classification, DFL)
+- Learning rate progression
+- GPU utilization
+- Memory usage
+
+#### Validation Metrics
+- mAP50-95
+- Precision
+- Recall
+- F1-Score
+- Confusion matrix
 
 ## Project Structure
 
