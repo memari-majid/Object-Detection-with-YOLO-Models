@@ -276,7 +276,7 @@ SOFTWARE.
 
 ## Author
 
-Dr. Majid Memari
+Majid Memari
 Utah Valley University
 mmemari@uvu.edu
 
