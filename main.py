@@ -17,10 +17,10 @@ Key Features:
 Usage:
 ------
 Basic usage:
-    python run.py
+    python main.py
 
 With specific configuration:
-    python run.py --dataset clean --preset yolo11_small_focused --models yolo11x
+    python main.py --dataset clean --preset yolo11_small_focused --models yolo11x
 
 Available arguments:
     --dataset: clean, full
@@ -40,6 +40,20 @@ Parameter Presets:
    - Maximum resolution (1920px)
    - Intensive augmentation
    - Extended training duration (400 epochs)
+
+3. yolo11_high_res:
+   - Enhanced configuration for high-resolution processing
+   - Increased resolution (2560px)
+   - Reduced batch size for higher resolution
+   - Multi-GPU utilization
+   - Automatic mixed precision
+   - Gradient accumulation steps
+   - Memory optimization
+   - Advanced training features
+   - Augmentation strategy optimized for high-resolution
+   - Training stability
+   - Loss functions
+   - Advanced augmentation
 
 Dataset Structure:
 ----------------
@@ -97,6 +111,7 @@ from datetime import datetime
 import cv2
 import json
 import yaml
+import argparse
 
 console = Console()
 
@@ -134,7 +149,7 @@ MODELS = {
     }
 }
 
-# Training Parameter Presets - Updated with valid batch size for 2 GPUs
+# Training Parameter Presets - Updated with valid YOLO arguments
 PARAMETER_PRESETS = {
     'yolo11_small_focused': {  # Even more focused on tiny objects
         'epochs': 400,         # More epochs
@@ -176,6 +191,71 @@ PARAMETER_PRESETS = {
         'device': '0,1',
         'exist_ok': True,
         'project': 'WTB_Results'
+    },
+    'yolo11_high_res': {
+        # Basic Training Parameters
+        'epochs': 400,
+        'imgsz': 1280,        # Reduced from 2560 to 1280 for tiles
+        'batch': 2,           # Batch size per GPU
+        'device': '0,1',
+        'amp': True,
+        'cache': True,
+        
+        # Memory Optimization
+        'overlap_mask': False,
+        'workers': 4,
+        'batch_gpu': 1,
+        
+        # Tiling Parameters
+        'tile_size': 1280,
+        'tile_overlap': 0.2,
+        'merge_iou_thresh': 0.5,
+        
+        # Optimizer Configuration
+        'optimizer': 'AdamW',
+        'lr0': 0.0001,        # Initial learning rate
+        'lrf': 0.000001,      # Final learning rate
+        'momentum': 0.937,
+        'weight_decay': 0.001,
+        
+        # Training Features
+        'rect': True,         # Rectangular training
+        
+        # Augmentation Strategy
+        'mosaic': 1.0,
+        'scale': 0.2,
+        'flipud': 0.7,
+        'fliplr': 0.7,
+        'augment': True,
+        'degrees': 10.0,
+        'translate': 0.3,
+        'perspective': 0.001,
+        'shear': 3.0,
+        
+        # Training Stability
+        'cos_lr': True,       # Cosine learning rate
+        'patience': 100,
+        'workers': 8,
+        'label_smoothing': 0.15,
+        'overlap_mask': True,
+        'warmup_epochs': 25,
+        
+        # Loss Functions
+        'box': 10.0,          # Box loss gain
+        'cls': 0.3,           # Class loss gain
+        'dfl': 2.0,           # DFL loss gain
+        
+        # Advanced Augmentation
+        'close_mosaic': 15,
+        'mixup': 0.2,
+        'copy_paste': 0.4,
+        'hsv_h': 0.015,
+        'hsv_s': 0.8,
+        'hsv_v': 0.5,
+        
+        # Project Settings
+        'exist_ok': True,
+        'project': 'WTB_Results'
     }
 }
 
@@ -194,14 +274,23 @@ VAL_PARAMS = {
         'device': '0,1',
         'conf': 0.1,         # Very low confidence threshold
         'iou': 0.4          # Lower IoU threshold
+    },
+    'yolo11_high_res': {
+        'imgsz': 2560,
+        'batch': 1,
+        'device': '0,1',
+        'conf': 0.1,
+        'iou': 0.4,
+        'amp': True,
+        'rect': True
     }
 }
 
-# Default Configuration - Allow all models
+# Default Configuration - Set specific defaults
 DEFAULT_CONFIG = {
     'dataset': 'clean',
-    'parameter_preset': 'yolo11_small_focused',  # Default to small object configuration
-    'models': ['yolov8x', 'yolov9e', 'yolov10x', 'yolo11x'],  # All models available
+    'parameter_preset': 'yolo11_high_res',  # Changed from yolo11_small_focused to yolo11_high_res
+    'models': ['yolo11x'],  # Changed from all models to just yolo11x
     'device': '0,1'
 }
 
@@ -224,29 +313,11 @@ logging.basicConfig(
 )
 
 def setup_wandb_logging(model_name, run_type="training"):
-    """
-    Initialize Weights & Biases logging for training or evaluation runs.
-
-    Parameters:
-    -----------
-    model_name : str
-        Name of the YOLO model being trained/evaluated
-    run_type : str, optional
-        Type of run ('training' or 'evaluation'), default is 'training'
-
-    Returns:
-    --------
-    wandb.Run
-        Initialized Weights & Biases run object
-
-    Notes:
-    ------
-    - Creates unique run names using timestamps
-    - Includes all training parameters in configuration
-    - Groups runs by model name for easier comparison
-    """
+    """Initialize Weights & Biases logging with improved console output."""
     timestamp = datetime.now().strftime('%Y%m%d_%H%M')
     model_base_name = model_name.replace('.pt', '')
+    
+    console.print(f"\n[bold cyan]Setting up logging for {model_base_name}...")
     
     if run_type == "training":
         project_name = "WTB_Defect_Detection_Clean"
@@ -255,6 +326,9 @@ def setup_wandb_logging(model_name, run_type="training"):
         project_name = "WTB_Model_Evaluation_Clean"
         run_name = f"{model_base_name}/clean_evaluation_{timestamp}"
     
+    console.print(f"[cyan]Project: {project_name}")
+    console.print(f"[cyan]Run Name: {run_name}")
+    
     return wandb.init(
         project=project_name,
         name=run_name,
@@ -262,7 +336,7 @@ def setup_wandb_logging(model_name, run_type="training"):
         job_type=run_type,
         config={
             "model": model_name,
-            **PARAMETER_PRESETS['yolo11_small_focused'],  # Use the specific preset
+            **PARAMETER_PRESETS['yolo11_small_focused'],
             "dataset": "wind_turbine_blades_clean",
             "defect_types": ["defect"]
         },
@@ -423,122 +497,172 @@ def analyze_misclassifications(model, data_yaml_path, model_name, results_dir):
         console.print(f"[bold red]Error analyzing misclassifications: {str(e)}")
         return None
 
+def setup_training_optimizations(model):
+    """Setup advanced training optimizations."""
+    try:
+        # Enable automatic mixed precision
+        from torch.cuda.amp import GradScaler
+        scaler = GradScaler()
+        
+        # Enable activation checkpointing
+        if hasattr(model, 'model'):
+            from torch.utils.checkpoint import checkpoint_sequential
+            model.model = checkpoint_sequential(model.model, 3)
+        
+        # Set memory efficient attention
+        if hasattr(model, 'set_efficient_attention'):
+            model.set_efficient_attention(True)
+        
+        return scaler
+    except Exception as e:
+        console.print(f"[yellow]Warning: Could not setup all optimizations: {str(e)}")
+        return None
+
+def train_with_gradient_accumulation(model, dataloader, optimizer, scaler, accumulation_steps=4):
+    """Training step with gradient accumulation."""
+    optimizer.zero_grad()
+    accumulated_loss = 0
+    
+    for i, batch in enumerate(dataloader):
+        with torch.cuda.amp.autocast():
+            loss = model(batch)
+            loss = loss / accumulation_steps
+        
+        scaler.scale(loss).backward()
+        accumulated_loss += loss.item()
+        
+        if (i + 1) % accumulation_steps == 0:
+            scaler.step(optimizer)
+            scaler.update()
+            optimizer.zero_grad()
+    
+    return accumulated_loss * accumulation_steps
+
 def train_and_evaluate(model_name, data_yaml_path, training_params, val_params):
-    """
-    Train and evaluate a YOLO model with specified parameters.
-
-    Parameters:
-    -----------
-    model_name : str
-        Path to the YOLO model weights
-    data_yaml_path : str
-        Path to dataset configuration YAML
-    training_params : dict
-        Training parameters and hyperparameters
-    val_params : dict
-        Validation parameters
-
-    Returns:
-    --------
-    tuple
-        (success: bool, metrics: dict)
-        success: Whether training completed successfully
-        metrics: Dictionary of evaluation metrics
-
-    Features:
-    ---------
-    - Wandb logging for both training and evaluation
-    - Comprehensive metric collection
-    - Misclassification analysis
-    - Result visualization
-    """
+    """Train and evaluate with tiled processing for high-resolution images."""
     try:
         # Initialize training run
         train_run = setup_wandb_logging(model_name, "training_clean")
-        console.print(f"\n[bold blue]Starting training for {model_name} with clean dataset")
+        
+        # Print training setup
+        console.print("\n[bold blue]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+        console.print(f"[bold blue]Starting Training: {model_name}")
+        console.print("[bold blue]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+        
+        # Print key parameters
+        console.print("\n[yellow]Key Training Parameters:")
+        important_params = ['epochs', 'imgsz', 'batch', 'device', 'lr0']
+        for param in important_params:
+            if param in training_params:
+                console.print(f"[yellow]• {param}: {training_params[param]}")
         
         # Load model
+        console.print("\n[cyan]Loading model...")
         model = YOLO(model_name)
         
-        # Train using defined parameters
-        results = model.train(
-            data=data_yaml_path,
-            **training_params
-        )
+        # Process training images in tiles
+        console.print("\n[cyan]Processing training images in tiles...")
+        with open(data_yaml_path, 'r') as f:
+            data_config = yaml.safe_load(f)
+            
+        # Create temporary directories for tiles
+        tile_dir = Path('tiles_temp')
+        tile_dir.mkdir(exist_ok=True)
         
-        # Validate the model using validation parameters
-        val_results = model.val(
-            data=data_yaml_path,
-            split='test',
-            **val_params
-        )
+        # Process each image and create tiles
+        for split in ['train', 'val']:
+            split_file = data_config[split]
+            with open(split_file, 'r') as f:
+                image_paths = f.readlines()
+                
+            for img_path in image_paths:
+                img_path = img_path.strip()
+                tiles, positions, orig_size = process_high_res_image(
+                    img_path,
+                    target_size=training_params['imgsz'],
+                    tile_size=training_params['tile_size'],
+                    overlap=training_params['tile_overlap']
+                )
+                
+                if tiles is not None:
+                    # Save tiles and their metadata
+                    for i, (tile, pos) in enumerate(zip(tiles, positions)):
+                        tile_path = tile_dir / f"{Path(img_path).stem}_tile_{i}.jpg"
+                        cv2.imwrite(str(tile_path), tile)
+                        
+        # Update data configuration to use tiles
+        training_params['data'] = str(tile_dir)
+        
+        # Train the model
+        console.print("\n[bold green]Starting training...")
+        results = model.train(**training_params)
+        
+        # Validate using tiled approach
+        console.print("\n[bold cyan]Starting validation...")
+        val_results = []
+        
+        for img_path in val_images:
+            tiles, positions, orig_size = process_high_res_image(
+                img_path,
+                target_size=val_params['imgsz'],
+                tile_size=training_params['tile_size'],
+                overlap=training_params['tile_overlap']
+            )
+            
+            if tiles is not None:
+                # Get predictions for each tile
+                tile_predictions = []
+                for tile in tiles:
+                    pred = model.predict(tile, **val_params)
+                    tile_predictions.append(pred)
+                
+                # Merge predictions
+                final_predictions = merge_predictions(
+                    tile_predictions,
+                    positions,
+                    orig_size,
+                    training_params['merge_iou_thresh']
+                )
+                
+                val_results.append(final_predictions)
         
         # Close training run
         train_run.finish()
         
         # Start evaluation run
+        console.print("\n[bold magenta]Starting evaluation...")
         eval_run = setup_wandb_logging(model_name, "evaluation")
         
-        # Extract and log metrics
-        try:
-            metrics = {
-                'model': model_name,
-                'training_time': results.t_total if hasattr(results, 't_total') else None
-            }
-            
-            if hasattr(results, 'results_dict'):
-                metrics.update({
-                    'precision': results.results_dict.get('metrics/precision(B)', None),
-                    'recall': results.results_dict.get('metrics/recall(B)', None),
-                    'f1-score': results.results_dict.get('metrics/F1(B)', None),
-                })
-            
-            if hasattr(results, 'maps') and results.maps is not None:
-                metrics.update({
-                    'mAP50': results.maps[0] if len(results.maps) > 0 else None,
-                    'mAP50-95': results.maps[1] if len(results.maps) > 1 else None,
-                })
-            
-            valid_metrics = {k: v for k, v in metrics.items() if v is not None}
-            if valid_metrics:
-                eval_run.log(valid_metrics)
-                
-                save_dir = Path('evaluation_results_clean') / model_name.replace('.pt', '')
-                save_dir.mkdir(parents=True, exist_ok=True)
-                pd.DataFrame([valid_metrics]).to_csv(
-                    save_dir / 'metrics.csv',
-                    index=False
-                )
-                
-                console.print(f"[bold green]Evaluation completed for {model_name}")
-                console.print("Metrics:", valid_metrics)
-            else:
-                console.print(f"[bold yellow]Warning: No valid metrics found for {model_name}")
-            
-            # After training, analyze misclassifications
-            console.print("\n[bold blue]Analyzing misclassifications...")
-            misclassification_stats = analyze_misclassifications(
-                model, 
-                data_yaml_path,
-                model_name,
-                f"WTB_Results_Clean/{model_name.replace('.pt', '')}_clean_results"
-            )
-            
-            if misclassification_stats:
-                metrics.update({
-                    'total_misclassified': misclassification_stats['total_misclassified'],
-                    'false_positives': misclassification_stats['false_positives'],
-                    'false_negatives': misclassification_stats['false_negatives']
-                })
-            
-            return True, valid_metrics
-            
-        except Exception as metric_error:
-            console.print(f"[bold yellow]Warning: Error extracting metrics: {str(metric_error)}")
-            return True, {'model': model_name, 'error': str(metric_error)}
-            
+        # Extract and format metrics
+        metrics = {
+            'model': model_name,
+            'training_time': results.t_total if hasattr(results, 't_total') else None
+        }
+        
+        if hasattr(results, 'results_dict'):
+            metrics.update({
+                'precision': results.results_dict.get('metrics/precision(B)', None),
+                'recall': results.results_dict.get('metrics/recall(B)', None),
+                'f1-score': results.results_dict.get('metrics/F1(B)', None),
+            })
+        
+        if hasattr(results, 'maps') and results.maps is not None:
+            metrics.update({
+                'mAP50': results.maps[0] if len(results.maps) > 0 else None,
+                'mAP50-95': results.maps[1] if len(results.maps) > 1 else None,
+            })
+        
+        # Print results summary
+        console.print("\n[bold green]Training Complete!")
+        console.print("[bold yellow]Final Metrics:")
+        for metric, value in metrics.items():
+            if value is not None:
+                console.print(f"[yellow]• {metric}: {value:.4f}" if isinstance(value, float) else f"[yellow]• {metric}: {value}")
+        
+        return True, metrics
+        
     except Exception as e:
-        console.print(f"[bold red]Error processing {model_name}: {str(e)}")
+        console.print(f"\n[bold red]Error during training: {str(e)}")
         return False, str(e)
     finally:
         if 'train_run' in locals():
@@ -639,37 +763,248 @@ def organize_annotated_images(grass_files, output_base_dir):
         console.print(f"[bold red]Error organizing images: {str(e)}")
         return False
 
+def check_requirements():
+    """
+    Check if all required packages are installed and GPU is available.
+    """
+    try:
+        import torch
+        if not torch.cuda.is_available():
+            console.print("[bold red]Warning: CUDA is not available. Training will be slow on CPU.")
+            return False
+        
+        required_packages = {
+            'ultralytics': 'ultralytics',
+            'wandb': 'wandb',
+            'opencv-python': 'cv2',
+            'rich': 'rich',
+            'pandas': 'pandas',
+            'matplotlib': 'matplotlib',
+            'pyyaml': 'yaml'
+        }
+        
+        missing_packages = []
+        for package, import_name in required_packages.items():
+            try:
+                __import__(import_name)
+            except ImportError:
+                missing_packages.append(package)
+        
+        if missing_packages:
+            console.print(f"[bold red]Missing required packages: {', '.join(missing_packages)}")
+            console.print("Install using: pip install " + " ".join(missing_packages))
+            return False
+            
+        return True
+    except Exception as e:
+        console.print(f"[bold red]Error checking requirements: {str(e)}")
+        return False
+
+def verify_dataset_structure(data_yaml_path):
+    """
+    Verify that all required dataset files and directories exist.
+    """
+    try:
+        if not Path(data_yaml_path).exists():
+            console.print(f"[bold red]Dataset YAML not found at {data_yaml_path}")
+            return False
+            
+        with open(data_yaml_path, 'r') as f:
+            data_config = yaml.safe_load(f)
+            
+        required_keys = ['train', 'val', 'test', 'nc', 'names']
+        missing_keys = [key for key in required_keys if key not in data_config]
+        if missing_keys:
+            console.print(f"[bold red]Missing required keys in {data_yaml_path}: {missing_keys}")
+            return False
+            
+        for split in ['train', 'val', 'test']:
+            file_path = data_config[split]
+            if not Path(file_path).exists():
+                console.print(f"[bold red]{split} file not found at {file_path}")
+                return False
+                
+            # Verify that image paths in the file exist
+            with open(file_path, 'r') as f:
+                image_paths = f.readlines()
+                for img_path in image_paths[:5]:  # Check first 5 images as sample
+                    if not Path(img_path.strip()).exists():
+                        console.print(f"[bold red]Image not found: {img_path.strip()}")
+                        return False
+        
+        return True
+    except Exception as e:
+        console.print(f"[bold red]Error verifying dataset structure: {str(e)}")
+        return False
+
+def verify_model_file(model_path):
+    """
+    Verify that the model file exists and is valid.
+    """
+    try:
+        if not Path(model_path).exists():
+            console.print(f"[bold red]Model file not found: {model_path}")
+            return False
+            
+        # Try to load model to verify it's valid
+        model = YOLO(model_path)
+        return True
+    except Exception as e:
+        console.print(f"[bold red]Error verifying model file {model_path}: {str(e)}")
+        return False
+
+def setup_gpu_environment():
+    """
+    Setup optimal GPU environment for training.
+    """
+    try:
+        import torch
+        
+        # Set device
+        if torch.cuda.is_available():
+            n_gpus = torch.cuda.device_count()
+            if n_gpus < 2:
+                console.print("[yellow]Warning: Less than 2 GPUs available. Adjusting configuration...")
+                # Update device settings in presets
+                for preset in PARAMETER_PRESETS.values():
+                    preset['device'] = '0'
+                for preset in VAL_PARAMS.values():
+                    preset['device'] = '0'
+                    
+            # Set CUDA device
+            torch.cuda.set_device(0)
+            
+            # Enable cuDNN autotuner
+            torch.backends.cudnn.benchmark = True
+            
+            # Clear GPU cache
+            torch.cuda.empty_cache()
+            
+            # Print GPU info
+            for i in range(n_gpus):
+                gpu_name = torch.cuda.get_device_name(i)
+                memory = torch.cuda.get_device_properties(i).total_memory / 1e9  # Convert to GB
+                console.print(f"[green]GPU {i}: {gpu_name} ({memory:.1f} GB)")
+                
+        return True
+    except Exception as e:
+        console.print(f"[bold red]Error setting up GPU environment: {str(e)}")
+        return False
+
+def process_high_res_image(image_path, target_size=2560, tile_size=1280, overlap=0.2):
+    """
+    Process high-resolution images using tiling strategy.
+    
+    Parameters:
+    -----------
+    image_path : str
+        Path to the high-resolution image
+    target_size : int
+        Target size for the longest dimension
+    tile_size : int
+        Size of each tile
+    overlap : float
+        Overlap percentage between tiles (0.0 to 1.0)
+    """
+    try:
+        # Read image
+        image = cv2.imread(image_path)
+        if image is None:
+            raise ValueError(f"Could not read image: {image_path}")
+            
+        # Calculate overlap in pixels
+        overlap_px = int(tile_size * overlap)
+        
+        # Get original dimensions
+        h, w = image.shape[:2]
+        
+        # Calculate number of tiles needed
+        n_tiles_h = max(1, (h - overlap_px) // (tile_size - overlap_px))
+        n_tiles_w = max(1, (w - overlap_px) // (tile_size - overlap_px))
+        
+        tiles = []
+        tile_positions = []
+        
+        for i in range(n_tiles_h):
+            for j in range(n_tiles_w):
+                # Calculate tile coordinates
+                x1 = j * (tile_size - overlap_px)
+                y1 = i * (tile_size - overlap_px)
+                x2 = min(x1 + tile_size, w)
+                y2 = min(y1 + tile_size, h)
+                
+                # Extract tile
+                tile = image[y1:y2, x1:x2]
+                
+                # Pad if necessary
+                if tile.shape[0] < tile_size or tile.shape[1] < tile_size:
+                    padded_tile = np.zeros((tile_size, tile_size, 3), dtype=np.uint8)
+                    padded_tile[:tile.shape[0], :tile.shape[1]] = tile
+                    tile = padded_tile
+                
+                tiles.append(tile)
+                tile_positions.append((x1, y1, x2, y2))
+        
+        return tiles, tile_positions, (h, w)
+        
+    except Exception as e:
+        console.print(f"[bold red]Error processing image {image_path}: {str(e)}")
+        return None, None, None
+
+def merge_predictions(predictions, tile_positions, original_size, iou_threshold=0.5):
+    """
+    Merge predictions from multiple tiles into a single prediction.
+    
+    Parameters:
+    -----------
+    predictions : list
+        List of predictions from each tile
+    tile_positions : list
+        List of tile positions (x1, y1, x2, y2)
+    original_size : tuple
+        Original image size (height, width)
+    iou_threshold : float
+        IoU threshold for merging overlapping predictions
+    """
+    merged_predictions = []
+    
+    # Convert tile predictions to global coordinates
+    for pred, (tx1, ty1, _, _) in zip(predictions, tile_positions):
+        if pred is not None and len(pred) > 0:
+            # Adjust coordinates to global image space
+            pred[:, [0, 2]] += tx1  # adjust x coordinates
+            pred[:, [1, 3]] += ty1  # adjust y coordinates
+            merged_predictions.extend(pred)
+    
+    if not merged_predictions:
+        return np.array([])
+    
+    # Convert to numpy array
+    merged_predictions = np.vstack(merged_predictions)
+    
+    # Apply NMS to remove overlapping predictions
+    from ultralytics.utils.ops import non_max_suppression
+    final_predictions = non_max_suppression(
+        torch.from_numpy(merged_predictions).float(),
+        iou_thres=iou_threshold,
+        conf_thres=0.1
+    )[0].numpy()
+    
+    return final_predictions
+
 def main():
     """
     Main execution function for training and evaluation pipeline.
-
-    Features:
-    ---------
-    - Command line argument parsing
-    - Dataset validation
-    - Model availability checking
-    - Training execution
-    - Results comparison and visualization
-    - Error handling and logging
-
-    Command Line Arguments:
-    ---------------------
-    --dataset : str
-        Dataset configuration to use
-    --preset : str
-        Parameter preset for training
-    --models : list
-        Models to train and evaluate
-
-    Outputs:
-    --------
-    - Training logs
-    - Evaluation metrics
-    - Comparison plots
-    - Misclassification analysis
     """
-    # Allow command line arguments or use defaults
-    import argparse
+    # Check requirements first
+    if not check_requirements():
+        return
+        
+    # Setup GPU environment
+    if not setup_gpu_environment():
+        return
+        
+    # Parse arguments
     parser = argparse.ArgumentParser(description='Train YOLO models on WTB dataset')
     parser.add_argument('--dataset', choices=list(DATASET_CONFIG.keys()), 
                        default=DEFAULT_CONFIG['dataset'],
@@ -681,78 +1016,60 @@ def main():
                        default=DEFAULT_CONFIG['models'],
                        help='Models to train')
     
-    # Parse arguments only once
     args = parser.parse_args()
     
+    # Print configuration
     console.print("\n[bold blue]Starting training with configuration:")
     console.print(f"Dataset: {args.dataset}")
     console.print(f"Preset: {args.preset}")
     console.print(f"Models: {args.models}")
     
-    # Print the actual parameters being used
-    console.print("\n[bold yellow]Training Parameters:")
-    for key, value in PARAMETER_PRESETS[args.preset].items():
-        console.print(f"{key}: {value}")
-    
     # Get dataset configuration
     dataset_config = DATASET_CONFIG[args.dataset]
     data_yaml_path = dataset_config['yaml_path']
     
-    if not Path(data_yaml_path).exists():
-        console.print(f"[bold red]Dataset not found at {data_yaml_path}")
+    # Verify dataset structure
+    if not verify_dataset_structure(data_yaml_path):
         return
-    
-    # Verify the data files exist
-    with open(data_yaml_path, 'r') as f:
-        data_config = yaml.safe_load(f)
-        required_files = [data_config['train'], data_config['val'], data_config['test']]
-        
-    for file_path in required_files:
-        if not Path(file_path).exists():
-            console.print(f"[bold red]Error: Required file {file_path} not found")
-            return
     
     # Get training parameters
     training_params = PARAMETER_PRESETS[args.preset].copy()
     training_params['project'] = dataset_config['project_name']
     val_params = VAL_PARAMS[args.preset].copy()
     
-    # Print configuration
-    console.print("\n[bold blue]Training Configuration:")
-    console.print(f"Dataset: {dataset_config['description']}")
-    console.print(f"Parameter Preset: {args.preset}")
-    console.print(f"Models to train: {args.models}")
-    
     all_results = []
-    
-    # Check for available models
-    console.print("\n[bold blue]Available model files in directory:")
-    for model_name in args.models:
-        model_info = MODELS[model_name]
-        model_path = Path(model_info['path'])
-        if model_path.exists():
-            console.print(f"[green]Found: {model_info['path']} - {model_info['description']}")
-        else:
-            console.print(f"[red]Missing: {model_info['path']} - {model_info['description']}")
     
     # Train models
     for model_name in args.models:
         model_info = MODELS[model_name]
-        model_path = Path(model_info['path'])
-        if not model_path.exists():
-            console.print(f"[bold red]Error: Model file {model_info['path']} not found. Skipping...")
-            continue
         
-        console.print(f"[bold blue]Training {model_info['description']}")
-        success, result = train_and_evaluate(model_info['path'], data_yaml_path, 
-                                           training_params, val_params)
-        if success:
-            all_results.append(result)
+        # Verify model file
+        if not verify_model_file(model_info['path']):
+            continue
+            
+        console.print(f"\n[bold blue]Training {model_info['description']}")
+        
+        try:
+            success, result = train_and_evaluate(model_info['path'], data_yaml_path, 
+                                               training_params, val_params)
+            if success:
+                all_results.append(result)
+        except Exception as e:
+            console.print(f"[bold red]Error training {model_name}: {str(e)}")
+            continue
     
+    # Generate results
     if all_results:
         console.print("\n[bold yellow]Final Model Comparison (Clean Dataset):")
         comparison_df = pd.DataFrame(all_results)
         console.print(comparison_df.to_string())
+        
+        # Save results
+        results_dir = Path('evaluation_results_clean')
+        results_dir.mkdir(exist_ok=True)
+        
+        # Save comparison DataFrame
+        comparison_df.to_csv(results_dir / 'model_comparison.csv', index=False)
         
         # Create comparison plot
         try:
@@ -761,27 +1078,38 @@ def main():
             metrics_to_plot = ['mAP50', 'mAP50-95', 'precision', 'recall', 'f1-score']
             plt.figure(figsize=(12, 6))
             
-            x = np.arange(len(MODELS))
+            x = np.arange(len(comparison_df))
             width = 0.15
             multiplier = 0
             
             for metric in metrics_to_plot:
-                offset = width * multiplier
-                plt.bar(x + offset, comparison_df[metric], width, label=metric)
-                multiplier += 1
+                if metric in comparison_df.columns:
+                    offset = width * multiplier
+                    plt.bar(x + offset, comparison_df[metric], width, label=metric)
+                    multiplier += 1
             
             plt.xlabel('Models')
             plt.ylabel('Scores')
             plt.title('YOLO Models Performance Comparison (Clean Dataset)')
-            plt.xticks(x + width * 2, MODELS.keys(), rotation=45)
+            plt.xticks(x + width * 2, comparison_df['model'], rotation=45)
             plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
             plt.tight_layout()
             
-            plt.savefig('evaluation_results_clean/model_comparison.png')
+            plt.savefig(results_dir / 'model_comparison.png', dpi=300, bbox_inches='tight')
             plt.close()
             
         except Exception as e:
             console.print(f"[bold red]Error creating comparison plot: {str(e)}")
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        console.print("\n[bold yellow]Training interrupted by user")
+    except Exception as e:
+        console.print(f"[bold red]Unexpected error: {str(e)}")
+    finally:
+        # Cleanup
+        import torch
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
